@@ -1,0 +1,9 @@
+*.swp
+*.swo
+*.exe
+*.dll
+vim_session_*
+tags
+Debug/
+Release/
+Makefile
