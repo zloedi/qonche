@@ -1,2 +1,2 @@
 # qonche
-qonche is a tiny quake-like console in 300 lines of C
+qonche is a tiny quake-like console written in C
