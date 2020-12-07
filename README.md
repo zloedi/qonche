@@ -1,5 +1,5 @@
 # qonche 
-A tiny quake-like console written in C
+A tiny quake-like console written in C with no dependencies.
 
 This lib implements a stripped-down quake-like console for real-time apps (i.e. games): 
 * editing:
