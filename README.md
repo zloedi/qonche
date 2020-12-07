@@ -1,5 +1,5 @@
 # qonche 
-A tiny quake-like console in a single C header with no dependencies.
+A minimal quake-like console in a single C header with no dependencies.
 
 This lib PROVIDES: 
 * editing:
