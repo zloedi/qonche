@@ -1,7 +1,7 @@
 # qonche 
-A tiny quake-like console written in C with no dependencies.
+A tiny quake-like console in a single C header with no dependencies.
 
-This lib implements a stripped-down quake-like console for real-time apps (i.e. games): 
+This lib PROVIDES: 
 * editing:
    - cursor movement
    - erase characters at the cursor
@@ -11,7 +11,7 @@ This lib implements a stripped-down quake-like console for real-time apps (i.e. 
    - add string to the pager 
    - paging 
 
-This lib DOES NOT provide:
+This lib DOES NOT PROVIDE:
 * utf-8 / multibyte support
 * advanced cursor movement i.e. between words
 * commands parsing, autocompletion, history, etc.
