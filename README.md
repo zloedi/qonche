@@ -16,3 +16,11 @@ This lib DOES NOT PROVIDE:
 * advanced cursor movement i.e. between words
 * commands parsing, autocompletion, history, etc.
 * printf-like formatting
+
+##Usage
+
+1. Define QONCHE_IMPLEMENTATION above the include in the c/c++ file where you 
+want the implementation to reside.
+2. Define the QON_DrawChar macro with your own implementation of DrawChar().
+3. Invoke QON_Draw() which will eventually call back DrawChar().
+4. Wire up the input routines i.e. to the matching key events in your code.

@@ -41,10 +41,14 @@
 extern "C" {
 #endif
 
+// main
 #ifndef QON_DrawChar
 #define QON_DrawChar QON_DrawChar_impl
 #endif
 void QON_DrawChar( int c, int x, int y, int isUnderCursor, void *data );
+void QON_Draw( int conWidth, int conHeight, void *drawCharParam );
+
+// input 
 void QON_MoveRight( int numChars );
 void QON_MoveLeft( int numChars );
 void QON_DelFront( int numChars );
@@ -54,7 +58,6 @@ void QON_Print( const char *str );
 void QON_PageUp( void );
 void QON_PageDown( void );
 void QON_DoneCommand( void );
-void QON_Draw( int conWidth, int conHeight, void *drawCharParam );
 
 
 
