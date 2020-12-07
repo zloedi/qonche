@@ -13,19 +13,21 @@
 // * printing:
 //    - add string to the pager 
 //    - paging 
-
+//
 // This lib DOES NOT PROVIDE:
 // * utf-8 / multibyte support
 // * advanced cursor movement i.e. between words
 // * commands parsing, autocompletion, history, etc.
 // * printf-like formatting
-
 //
-// There are two distinct text fields on the console: the 'pager' and the 
-// 'command'. 
-// The 'command' field is where the command editing by moving the 'cursor' around 
-// is done. 
-// The 'pager' is where the Print-s are logged.
+//
+// Usage
+//
+// 1. Define QONCHE_IMPLEMENTATION above the include in the c/c++ file where you 
+// want the implementation to reside.
+// 2. Define the QON_DrawChar macro with your own implementation of DrawChar().
+// 3. Invoke QON_Draw() which will eventually call back DrawChar().
+// 4. Wire up the input routines i.e. to the matching key events in your code.
 
 // FIXME: try the console with smaller centered window
 // TODO: expose the command buffer so it could be processed
@@ -39,9 +41,6 @@
 extern "C" {
 #endif
 
-// TODO: expose the command buffer so it could be processed
-// TODO: support for <tag> </tag> tags maybe supply a mechanism to callback on any char sequence
-// TODO: API to access a sequence of characters on screen i.e. by mouse selection
 #ifndef QON_DrawChar
 #define QON_DrawChar QON_DrawChar_impl
 #endif
@@ -55,9 +54,25 @@ void QON_Print( const char *str );
 void QON_PageUp( void );
 void QON_PageDown( void );
 void QON_DoneCommand( void );
-void QON_Update( int conWidth, int conHeight, void *drawCharParam );
+void QON_Draw( int conWidth, int conHeight, void *drawCharParam );
+
+
+
 
 #ifdef QONCHE_IMPLEMENTATION
+
+
+
+// There are two distinct text fields on the console: the 'pager' and the 
+// 'command'. 
+// The 'command' field is where the command editing by moving the 'cursor' around 
+// is done. 
+// The 'pager' is where the Print-s are logged.
+// There are minimal set of global vars holding the state of the console:
+// You can redefine the following macros in order to change buffer sizes, prompt 
+// string, etc.
+
+
 
 // keep these power of two!
 
@@ -211,7 +226,7 @@ static inline int QON_GetPagerChar( int i ) {
     return qon_pagerHead - i >= QON_MAX_PAGER ? 0 : qon_pager[i & mask];
 }
 
-void QON_Update( int conWidth, int conHeight, void *drawCharParam ) {
+void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
     int numCmdLines;
 
     // == command field ==
