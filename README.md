@@ -17,10 +17,9 @@ This lib DOES NOT PROVIDE:
 * commands parsing, autocompletion, history, etc.
 * printf-like formatting
 
-##Usage
+### Usage
 
-1. Define QONCHE_IMPLEMENTATION above the include in the c/c++ file where you 
-want the implementation to reside.
-2. Define the QON_DrawChar macro with your own implementation of DrawChar().
-3. Invoke QON_Draw() which will eventually call back DrawChar().
-4. Wire up the input routines i.e. to the matching key events in your code.
+* Define `QONCHE_IMPLEMENTATION` above the include in the c/c++ file where you want the implementation to reside.
+* Define the `QON_DrawChar` macro with your own implementation of `DrawChar()`.
+* Invoke `ON_Draw()` which will eventually call back `DrawChar()`.
+* Wire up the input routines i.e. to the matching key events in your code.
