@@ -20,6 +20,6 @@ This lib DOES NOT PROVIDE:
 ### Usage
 
 * Define `QONCHE_IMPLEMENTATION` above the include in the c/c++ file where you want the implementation to reside.
-* Define the `QON_DrawChar` macro with your own implementation of `DrawChar()`.
-* Invoke `ON_Draw()` which will eventually call back `DrawChar()`.
+* Define the `QON_DrawChar` macro with your own implementation of `QON_DrawChar()`.
+* Invoke `QON_Draw()` which will eventually call back `QON_DrawChar()`.
 * Wire up the input routines i.e. to the matching key events in your code.
