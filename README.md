@@ -11,7 +11,7 @@ This lib implements a stripped-down quake-like console for real-time apps (i.e. 
    - add string to the pager 
    - paging 
 
-This lib doesn't provide:
+This lib DOES NOT provide:
 * utf-8 / multibyte support
 * advanced cursor movement i.e. between words
 * commands parsing, autocompletion, history, etc.
