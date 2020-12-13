@@ -1,8 +1,9 @@
 #define QONCHE_IMPLEMENTATION
 #define QON_DEBUG
 #define QON_DrawChar DrawChar
-#include "../qonche.h"
+#include "qonche.h"
 
+#include <stdio.h>
 #include <SDL.h>
 
 #define APPLEIIF_WIDTH 96
@@ -12,7 +13,7 @@
 #define APPLEIIF_CW (APPLEIIF_WIDTH/APPLEIIF_CLMS)
 #define APPLEIIF_CH (APPLEIIF_HEIGHT/APPLEIIF_ROWS)
 
-const unsigned char font[APPLEIIF_WIDTH * APPLEIIF_HEIGHT / 8] = {
+const unsigned char x_font[APPLEIIF_WIDTH * APPLEIIF_HEIGHT / 8] = {
     0x70,0x8f,0x1c,0xf3,0xef,0x9e,0x89,0xc0,0xa2,0x82,0x28,0x9c,
     0x89,0x48,0xa2,0x8a,0x08,0x20,0x88,0x80,0xa4,0x83,0x68,0xa2,
     0xaa,0x28,0xa0,0x8a,0x08,0x20,0x88,0x80,0xa8,0x82,0xac,0xa2,
@@ -79,32 +80,8 @@ const unsigned char font[APPLEIIF_WIDTH * APPLEIIF_HEIGHT / 8] = {
     0x80,0x20,0x00,0x00,0x00,0x00,0x01,0xc0,0x00,0x20,0x00,0x00,
 };
 
-static inline SDL_Texture* CreateTexture( SDL_Renderer *renderer ) {
-    SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "0" );
-    SDL_Texture *tex = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_ABGR8888, 
-                    SDL_TEXTUREACCESS_STATIC, APPLEIIF_WIDTH, APPLEIIF_HEIGHT );
-    int pitch = APPLEIIF_WIDTH * 4;
-    int bw = APPLEIIF_WIDTH / 8;
-    unsigned char bytes[pitch * APPLEIIF_HEIGHT];
-    for ( int y = 0, idx = 0; y < APPLEIIF_HEIGHT; y++ ) {
-        for ( int x = 0; x < bw; x++ ) {
-            int byte = font[x + y * bw];
-            for ( int i = 0; i < 8; i++, idx += 4 ) {
-                int alpha = ( byte & ( 1 << ( 7 - i ) ) ) ? 0xff : 0;
-                bytes[idx + 0] = 0xff;
-                bytes[idx + 1] = 0xff;
-                bytes[idx + 2] = 0xff;
-                bytes[idx + 3] = alpha;
-            }
-        }
-    }
-}
-    
-void DrawChar( int c, int x, int y, int isUnderCursor, void *data ) {
-}
-
-int main( int argc, char *argv[] ) {
-#if 0
+static SDL_Texture* CreateTexture( SDL_Renderer *renderer ) {
+#if 0 // convert byte-per-pixel to bit-per-pixel
     for ( int y = 0; y < APPLEIIF_HEIGHT; y++ ) {
         for ( int x = 0; x < APPLEIIF_WIDTH; x += 8 ) {
             int c = 0;
@@ -117,5 +94,114 @@ int main( int argc, char *argv[] ) {
         printf( "\n" );
     }
 #endif
+    SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "0" );
+    SDL_Texture *tex = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_ABGR8888, 
+                    SDL_TEXTUREACCESS_STATIC, APPLEIIF_WIDTH, APPLEIIF_HEIGHT );
+    int pitch = APPLEIIF_WIDTH * 4;
+    int bw = APPLEIIF_WIDTH / 8;
+    unsigned char bytes[pitch * APPLEIIF_HEIGHT];
+    for ( int y = 0, idx = 0; y < APPLEIIF_HEIGHT; y++ ) {
+        for ( int x = 0; x < bw; x++ ) {
+            int byte = x_font[x + y * bw];
+            for ( int i = 0; i < 8; i++, idx += 4 ) {
+                int alpha = ( byte & ( 1 << ( 7 - i ) ) ) ? 0xff : 0;
+                bytes[idx + 0] = 0xff;
+                bytes[idx + 1] = 0xff;
+                bytes[idx + 2] = 0xff;
+                bytes[idx + 3] = alpha;
+            }
+        }
+    }
+    SDL_UpdateTexture( tex, NULL, bytes, pitch );
+    return tex;
+}
+
+SDL_Renderer *x_renderer;
+SDL_Window *x_window;
+SDL_Texture *x_fontTex;
+    
+void DrawChar( int c, int x, int y, int isUnderCursor, void *data ) {
+    ( void )data;
+
+    int blink = SDL_GetTicks() & 256;
+    int trueChar = ( isUnderCursor && blink ) ? 127 : c;
+    int idx = trueChar & ( APPLEIIF_ROWS * APPLEIIF_CLMS - 1 );
+    SDL_SetTextureAlphaMod( x_fontTex, 0xff );
+    SDL_SetTextureBlendMode( x_fontTex, SDL_BLENDMODE_BLEND );
+    SDL_Rect src = {
+        idx % APPLEIIF_CLMS * APPLEIIF_CW,
+        idx / APPLEIIF_CLMS * APPLEIIF_CH,
+        APPLEIIF_CW,
+        APPLEIIF_CH,
+    };
+    SDL_SetTextureColorMod( x_fontTex, 0xff, 0xff, 0xff );
+    SDL_Rect dst1= { 
+        100 + x * ( APPLEIIF_CW + 1 ) * 2, 
+        100 + y * ( APPLEIIF_CH + 3 ) * 2, 
+        APPLEIIF_CW * 2, 
+        APPLEIIF_CH * 2,
+    };
+    SDL_RenderCopy( x_renderer, x_fontTex, &src, &dst1 );
+}
+
+int main( int argc, char *argv[] ) {
+    if ( SDL_InitSubSystem( SDL_INIT_VIDEO ) < 0 ) {
+        fprintf( stderr, "SDL could not initialize video! SDL Error: %s\n", 
+                                                            SDL_GetError() );
+        return -1;
+    }
+    x_window = SDL_CreateWindow( NULL,
+                SDL_WINDOWPOS_UNDEFINED, 
+                SDL_WINDOWPOS_UNDEFINED, 
+                1024,
+                768,
+                SDL_WINDOW_RESIZABLE );
+    if( x_window == NULL ) {
+        fprintf( stderr, "Window could not be created! SDL Error: %s\n", 
+                                                            SDL_GetError() );
+        return -1;
+    }
+    SDL_SetHint( SDL_HINT_RENDER_DRIVER, "opengl" );
+    x_renderer = SDL_CreateRenderer( x_window, -1, SDL_RENDERER_ACCELERATED );
+    if ( x_renderer == NULL ) {
+        fprintf( stderr, "Renderer could not be created! SDL Error: %s\n", 
+                                                            SDL_GetError() );
+        return -1;
+    }
+    printf( "Renderer initialized.\n" );
+    if ( SDL_InitSubSystem( SDL_INIT_TIMER ) < 0 ) {
+        fprintf( stderr, "SDL could not initialize! SDL Error: %s", 
+                                                            SDL_GetError() );
+    }
+    SDL_SetWindowTitle( x_window, "qonche demo" );
+
+    x_fontTex = CreateTexture( x_renderer );
+
+    int quit = 0;
+    while ( ! quit ) {
+        SDL_Event event;
+        while ( SDL_PollEvent( &event ) ) {
+            int code = event.key.keysym.sym;
+            switch( event.type ) {
+                case SDL_TEXTINPUT:
+                    QON_Insert( event.text.text );
+                    break;
+                case SDL_KEYDOWN:
+                    break;
+                case SDL_QUIT:
+                    quit = 1;
+                    break;
+                default:
+                    break;
+            }
+        }
+        SDL_SetRenderDrawColor( x_renderer, 64, 64, 64, 255 );
+        SDL_RenderClear( x_renderer );
+        int w, h;
+        SDL_GetWindowSize( x_window, &w, &h );
+        QON_Draw( 20, 10, NULL );
+        SDL_RenderPresent( x_renderer );
+        SDL_Delay( 10 );
+    }
     return 0;
 }
