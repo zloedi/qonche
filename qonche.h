@@ -2,6 +2,7 @@
 // This work is licensed under the terms of the MIT license.  
 // For a copy, see https://opensource.org/licenses/MIT.
 
+
 // A tiny quake-like console in a single C header with no dependencies.
 //
 // This lib PROVIDES: 
@@ -30,10 +31,12 @@
 // 3. Invoke QON_Draw() which will eventually call back QON_DrawChar().
 // 4. Wire up the input routines i.e. to the matching key events in your code.
 
+
 // FIXME: try the console with smaller centered window
 // TODO: expose the command buffer so it could be processed
 // TODO: support for <tag> </tag> tags maybe supply a mechanism to callback on any char sequence
 // TODO: API to access a sequence of characters on screen i.e. by mouse selection
+
 
 #ifndef QONCHE_H
 #define QONCHE_H
