@@ -116,13 +116,18 @@ static SDL_Texture* CreateTexture( SDL_Renderer *renderer ) {
     return tex;
 }
 
+typedef struct {
+    int x, y;
+    int scaleX, scaleY;
+    int spaceX, spaceY;
+} dcParam_t;
+
 SDL_Renderer *x_renderer;
 SDL_Window *x_window;
 SDL_Texture *x_fontTex;
     
 void DrawChar( int c, int x, int y, int isUnderCursor, void *data ) {
-    ( void )data;
-
+    dcParam_t *prm = data;
     int blink = SDL_GetTicks() & 256;
     int trueChar = ( isUnderCursor && blink ) ? 127 : c;
     int idx = trueChar & ( APPLEIIF_ROWS * APPLEIIF_CLMS - 1 );
@@ -136,10 +141,10 @@ void DrawChar( int c, int x, int y, int isUnderCursor, void *data ) {
     };
     SDL_SetTextureColorMod( x_fontTex, 0xff, 0xff, 0xff );
     SDL_Rect dst1= { 
-        100 + x * ( APPLEIIF_CW + 1 ) * 2, 
-        100 + y * ( APPLEIIF_CH + 3 ) * 2, 
-        APPLEIIF_CW * 2, 
-        APPLEIIF_CH * 2,
+        prm->x + x * ( APPLEIIF_CW + prm->spaceX ) * prm->scaleX, 
+        prm->y + y * ( APPLEIIF_CH + prm->spaceY ) * prm->scaleY, 
+        APPLEIIF_CW * prm->scaleX, 
+        APPLEIIF_CH * prm->scaleY,
     };
     SDL_RenderCopy( x_renderer, x_fontTex, &src, &dst1 );
 }
@@ -177,6 +182,12 @@ int main( int argc, char *argv[] ) {
 
     x_fontTex = CreateTexture( x_renderer );
 
+    dcParam_t prm = {
+        .x = 100, .y = 100,
+        .scaleX = 2, .scaleY = 2,
+        .spaceX = 1, .spaceY = 3,
+    };
+
     int quit = 0;
     while ( ! quit ) {
         SDL_Event event;
@@ -199,7 +210,7 @@ int main( int argc, char *argv[] ) {
         SDL_RenderClear( x_renderer );
         int w, h;
         SDL_GetWindowSize( x_window, &w, &h );
-        QON_Draw( 20, 10, NULL );
+        QON_Draw( 20, 10, &prm );
         SDL_RenderPresent( x_renderer );
         SDL_Delay( 10 );
     }
