@@ -70,18 +70,16 @@ void QON_EmitCommand( void );
 
 
 
-// There are two distinct text fields on the console: the 'pager' and the 
-// 'command'. 
-// The 'command' field is where the command editing by moving the 'cursor' around 
-// is done. 
-// The 'pager' is where the Print-s are logged.
-// There are minimal set of global vars holding the state of the console:
+// There are two distinct text fields on the console: the 'PAGER' and the 
+// 'COMMAND'. 
+// The 'PAGER' is where the Print-s are logged.
+// The 'COMMAND' is where the command editing by moving the 'CURSOR' 
+// around is done. 
+
+
+
 // You can redefine the following macros in order to change buffer sizes, prompt 
-// string, etc.
-
-
-
-// keep these power of two!
+// string, etc. Keep them power of two.
 
 #ifndef QON_MAX_CMD
 #define QON_MAX_CMD 512
