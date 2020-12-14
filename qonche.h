@@ -32,7 +32,9 @@
 // 4. Wire up the input routines i.e. to the matching key events in your code.
 
 
-// FIXME: try the console with smaller centered window
+// FIXME: the page-down is broken
+
+// TODO: simplify delete back similar to delete front
 // TODO: expose the command buffer so it could be processed
 // TODO: support for <tag> </tag> tags maybe supply a mechanism to callback on any char sequence
 // TODO: API to access a sequence of characters on screen i.e. by mouse selection
@@ -172,10 +174,14 @@ void QON_DelFront( int numChars ) {
     int bufLen = QON_Len( qon_cmdBuf );
     // keep the trailing space
     int max = ( bufLen - 1 ) - qon_cursor;
-    numChars = QON_Min( numChars, max );
-    QON_ShiftLeft( &qon_cmdBuf[qon_cursor + numChars], numChars, 
-                                                        bufLen - qon_cursor );
-    QON_Zero( &qon_cmdBuf[bufLen - numChars], numChars );
+    int shift = QON_Min( numChars, max );
+    if ( shift ) {
+        int n = bufLen - shift;
+        for ( int i = qon_cursor; i < n; i++ ) {
+            qon_cmdBuf[i] = qon_cmdBuf[i + shift];
+        }
+        QON_Zero( &qon_cmdBuf[n], shift );
+    }
 }
 
 void QON_DelBack( int numChars ) {
