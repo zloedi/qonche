@@ -155,12 +155,11 @@ int main( int argc, char *argv[] ) {
                                                             SDL_GetError() );
         return -1;
     }
-    x_window = SDL_CreateWindow( NULL,
-                SDL_WINDOWPOS_UNDEFINED, 
-                SDL_WINDOWPOS_UNDEFINED, 
-                1024,
-                768,
-                SDL_WINDOW_RESIZABLE );
+    x_window = SDL_CreateWindow( "qonche demo",
+                                    SDL_WINDOWPOS_UNDEFINED, 
+                                    SDL_WINDOWPOS_UNDEFINED, 
+                                    1024, 768,
+                                    SDL_WINDOW_RESIZABLE );
     if( x_window == NULL ) {
         fprintf( stderr, "Window could not be created! SDL Error: %s\n", 
                                                             SDL_GetError() );
@@ -173,21 +172,17 @@ int main( int argc, char *argv[] ) {
                                                             SDL_GetError() );
         return -1;
     }
-    printf( "Renderer initialized.\n" );
     if ( SDL_InitSubSystem( SDL_INIT_TIMER ) < 0 ) {
         fprintf( stderr, "SDL could not initialize! SDL Error: %s", 
                                                             SDL_GetError() );
     }
-    SDL_SetWindowTitle( x_window, "qonche demo" );
-
+    printf( "SDL initialized.\n" );
     x_fontTex = CreateTexture( x_renderer );
-
     dcParam_t prm = {
         .x = 100, .y = 100,
         .scaleX = 2, .scaleY = 2,
         .spaceX = 1, .spaceY = 3,
     };
-
     int quit = 0;
     while ( ! quit ) {
         SDL_Event event;

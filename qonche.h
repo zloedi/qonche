@@ -61,7 +61,7 @@ void QON_Insert( const char *str );
 void QON_Print( const char *str );
 void QON_PageUp( void );
 void QON_PageDown( void );
-void QON_DoneCommand( void );
+void QON_EmitCommand( void );
 
 
 
@@ -131,6 +131,7 @@ static inline int QON_Len( const char *p ) {
 
 static inline void QON_ShiftLeft( char *p, int s, int n ) {
     if ( s ) {
+        // FIXME: negative index, really?
         for ( int i = 0; i < n; i++ ) {
             p[i - s] = p[i];
         }
@@ -191,12 +192,12 @@ void QON_DelBack( int numChars ) {
 
 void QON_Insert( const char *str ) {
     int bufLen = QON_Len( qon_cmdBuf );
-    // always leave a trailing space
+    // always leave a trailing space along with the term zero
     int max = ( QON_MAX_CMD - 2 ) - bufLen;
     int numChars = QON_Min( QON_Len( str ), max );
     QON_ShiftRight( &qon_cmdBuf[qon_cursor], numChars, bufLen - qon_cursor );
     QON_Cpy( &qon_cmdBuf[qon_cursor], str, numChars );
-    // deletion always fills zeros, no need to zer term here
+    // deletion always fills zeros, no need to zero term here
     qon_cursor += numChars;
 }
 
@@ -212,7 +213,7 @@ void QON_Print( const char *str ) {
     QON_Printn( str, QON_MAX_PAGER );
 }
 
-void QON_DoneCommand( void ) {
+void QON_EmitCommand( void ) {
     // skip the trailing space
     QON_Printn( qon_cmdBuf, QON_Len( qon_cmdBuf ) - 1 );
     QON_Print( "\n" );
