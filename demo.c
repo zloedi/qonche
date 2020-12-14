@@ -193,6 +193,16 @@ int main( int argc, char *argv[] ) {
                     QON_Insert( event.text.text );
                     break;
                 case SDL_KEYDOWN:
+                    switch ( code ) {
+                        case SDLK_RIGHT:     QON_MoveRight( 1 ); break;
+                        case SDLK_LEFT:      QON_MoveLeft( 1 );  break;
+                        case SDLK_DELETE:    QON_DelFront( 1 );  break;
+                        case SDLK_BACKSPACE: QON_DelBack( 1 );   break;
+                        case SDLK_PAGEUP:    QON_PageUp();       break;
+                        case SDLK_PAGEDOWN:  QON_PageDown();     break;
+                        case SDLK_RETURN:    QON_EmitCommand();  break;
+                        default: break;
+                    }
                     break;
                 case SDL_QUIT:
                     quit = 1;
