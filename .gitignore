@@ -2,3 +2,4 @@
 *.swo
 *.exe
 tags
+vim_session_*
