@@ -284,15 +284,16 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
     for ( int i = last, caret = 0; i < qon_pagerHead; i++ ) {
         int c = QON_GetPagerChar( i );
 
-        if ( caret >= max ) {
-            qon_nextPage = i;
-            break;
-        } 
-        
-        if ( ! c || c == '\n' ) {
-            caret += conWidth - caret % conWidth;
+        if ( caret && ( ! c || c == '\n' ) ) {
+            int r = caret % conWidth;
+            caret += r ? conWidth - r : 0;
         } else {
             caret++;
+        } 
+        
+        if ( caret > max ) {
+            qon_nextPage = i;
+            break;
         } 
     }
 
