@@ -31,10 +31,7 @@
 // 3. Invoke QON_Draw() which will eventually call back QON_DrawChar().
 // 4. Wire up the input routines i.e. to the matching key events in your code.
 
-
-// FIXME: the page-down is broken
-
-// TODO: simplify delete back similar to delete front
+// TODO: simplify insert and remove the shift right routine
 // TODO: expose the command buffer so it could be processed
 // TODO: support for <tag> </tag> tags maybe supply a mechanism to callback on any char sequence
 // TODO: API to access a sequence of characters on screen i.e. by mouse selection
@@ -129,15 +126,6 @@ static inline int QON_Len( const char *p ) {
     return n;
 }
 
-static inline void QON_ShiftLeft( char *p, int s, int n ) {
-    if ( s ) {
-        // FIXME: negative index, really?
-        for ( int i = 0; i < n; i++ ) {
-            p[i - s] = p[i];
-        }
-    }
-}
-
 static inline void QON_ShiftRight( char *p, int s, int n ) {
     if ( s ) {
         for ( int i = n - 1; i >= 0; i-- ) {
@@ -187,11 +175,15 @@ void QON_DelFront( int numChars ) {
 void QON_DelBack( int numChars ) {
     // always keep the prompt
     int max = qon_cursor - qon_promptLen;
-    numChars = QON_Min( numChars, max );
-    int bufLen = QON_Len( qon_cmdBuf );
-    QON_ShiftLeft( &qon_cmdBuf[qon_cursor], numChars, bufLen - qon_cursor );
-    QON_Zero( &qon_cmdBuf[bufLen - numChars], numChars );
-    qon_cursor -= numChars;
+    int shift = QON_Min( numChars, max );
+    if ( shift ) {
+        int bufLen = QON_Len( qon_cmdBuf );
+        for ( int i = qon_cursor; i < bufLen; i++ ) {
+            qon_cmdBuf[i - shift] = qon_cmdBuf[i];
+        }
+        QON_Zero( &qon_cmdBuf[bufLen - shift], shift );
+        qon_cursor -= shift;
+    }
 }
 
 void QON_Insert( const char *str ) {
