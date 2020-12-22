@@ -31,7 +31,6 @@
 // 3. Invoke QON_Draw() which will eventually call back QON_DrawChar().
 // 4. Wire up the input routines i.e. to the matching key events in your code.
 
-// TODO: simplify insert and remove the shift right routine
 // TODO: expose the command buffer so it could be processed
 // TODO: support for <tag> </tag> tags maybe supply a mechanism to callback on any char sequence
 // TODO: API to access a sequence of characters on screen i.e. by mouse selection
@@ -126,14 +125,6 @@ static inline int QON_Len( const char *p ) {
     return n;
 }
 
-static inline void QON_ShiftRight( char *p, int s, int n ) {
-    if ( s ) {
-        for ( int i = n - 1; i >= 0; i-- ) {
-            p[i + s] = p[i];
-        }
-    }
-}
-
 static inline void QON_Cpy( char *dst, const char *src, int sz ) {
     for ( int i = 0; i < sz; i++ ) {
         dst[i] = src[i];
@@ -190,11 +181,15 @@ void QON_Insert( const char *str ) {
     int bufLen = QON_Len( qon_cmdBuf );
     // always leave a trailing space along with the term zero
     int max = ( QON_MAX_CMD - 2 ) - bufLen;
-    int numChars = QON_Min( QON_Len( str ), max );
-    QON_ShiftRight( &qon_cmdBuf[qon_cursor], numChars, bufLen - qon_cursor );
-    QON_Cpy( &qon_cmdBuf[qon_cursor], str, numChars );
-    // deletion always fills zeros, no need to zero term here
-    qon_cursor += numChars;
+    int shift = QON_Min( QON_Len( str ), max );
+    if ( shift ) {
+        for ( int i = bufLen - 1; i >= qon_cursor; i-- ) {
+            qon_cmdBuf[i + shift] = qon_cmdBuf[i];
+        }
+        QON_Cpy( &qon_cmdBuf[qon_cursor], str, shift );
+        // deletion always fills zeros, no need to zero terminate here
+        qon_cursor += shift;
+    }
 }
 
 static void QON_Printn( const char *str, int n ) {
