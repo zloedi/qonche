@@ -1,5 +1,5 @@
 # qonche 
-A minimal quake-like console in a single C header with no dependencies.
+A minimal quake-like console in a single C header (stb-style) with no dependencies.
 
 This lib PROVIDES: 
 * editing:
@@ -19,7 +19,6 @@ This lib DOES NOT PROVIDE:
 
 ### Usage
 
-* Define `QONCHE_IMPLEMENTATION` above the include in the c/c++ file where you want the implementation to reside.
-* Define the `QON_DrawChar` macro with your own implementation of `QON_DrawChar()`.
-* Invoke `QON_Draw()` somewhere in your game/render loop, which will eventually call back `QON_DrawChar()`.
+* Invoke `QON_Draw()` somewhere in your game/render loop, which will eventually call back your version of `QON_DrawChar()`.
 * Wire up the input routines i.e. to the matching key events in your code.
+* See `qonche.h` for details.
