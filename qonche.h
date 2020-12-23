@@ -271,9 +271,9 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
     for ( int i = last, caret = 0; i < qon_pagerHead; i++ ) {
         int c = QON_GetPagerChar( i );
 
-        if ( caret && ( ! c || c == '\n' ) ) {
+        if ( ! c || c == '\n' ) {
             int r = caret % conWidth;
-            caret += r ? conWidth - r : 0;
+            caret += r ? conWidth - r : conWidth;
         } else {
             caret++;
         } 
@@ -310,8 +310,7 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
 
             if ( ! c || c == '\n' ) {
                 if ( ! n ) {
-                    // leave one char space for the last '~'
-                    pgrCaret -= conWidth - 1;
+                    pgrCaret -= conWidth;
                 } else {
                     int r = n % conWidth;
                     pgrCaret -= r ? conWidth - r : 0;
