@@ -299,20 +299,28 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
 
     for ( int i = last; ; ) {
 
+        // find a string enclosed by new line/term zero
+
         int n;
         for ( n = 0; n < max * 2; n++ ) {
             int c = QON_GetPagerChar( i - n );
 
+            // handle new lines specially
+            // i.e. new line at the end of a full line is ignored
+
             if ( ! c || c == '\n' ) {
                 if ( ! n ) {
-                    pgrCaret -= conWidth;
+                    // leave one char space for the last '~'
+                    pgrCaret -= conWidth - 1;
                 } else {
                     int r = n % conWidth;
                     pgrCaret -= r ? conWidth - r : 0;
                 }
                 break;
             }
-        } 
+        }
+
+        // go up along the string print characters and scan for prev page
 
         for ( int j = 0; j <= n; j++ ) {
             if ( pgrCaret < 0 ) {
