@@ -94,7 +94,7 @@ void QON_EmitCommand( void );
 #ifndef QON_PROMPT
 #define QON_PROMPT "] "
 #endif
-static const int qon_promptLen = sizeof( QON_PROMPT ) - 1;
+#define QON_PROMPT_LEN (sizeof(QON_PROMPT)-1);
 
 #ifdef QON_DEBUG
 #define QON_TRAILING_SPACE "<"
@@ -108,7 +108,7 @@ static int qon_currPage = QON_MAX_PAGER;
 static int qon_pagerHead = QON_MAX_PAGER;
 static char qon_pager[QON_MAX_PAGER];
 
-static int qon_cursor = qon_promptLen;
+static int qon_cursor = QON_PROMPT_LEN;
 static char qon_cmdBuf[QON_MAX_CMD] = (QON_PROMPT QON_TRAILING_SPACE);
 
 static inline int QON_Min( int a, int b ) {
@@ -144,7 +144,7 @@ void QON_MoveRight( int numChars ) {
 }
 
 void QON_MoveLeft( int numChars ) {
-    int max = qon_cursor - qon_promptLen;
+    int max = qon_cursor - QON_PROMPT_LEN;
     numChars = QON_Min( numChars, max );
     qon_cursor -= numChars;
 }
@@ -165,7 +165,7 @@ void QON_DelFront( int numChars ) {
 
 void QON_DelBack( int numChars ) {
     // always keep the prompt
-    int max = qon_cursor - qon_promptLen;
+    int max = qon_cursor - QON_PROMPT_LEN;
     int shift = QON_Min( numChars, max );
     if ( shift ) {
         int bufLen = QON_Len( qon_cmdBuf );
