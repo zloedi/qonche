@@ -16,6 +16,7 @@
 //    - paging 
 //
 // This lib DOES NOT PROVIDE:
+// * (font) rendering of any kind
 // * utf-8 / multibyte support
 // * advanced cursor movement i.e. between words
 // * commands parsing, autocompletion, history, etc.
@@ -43,14 +44,23 @@
 extern "C" {
 #endif
 
-// main
+// == core ==
+
+// Redefine this macro with your own implementation of DrawChar
 #ifndef QON_DrawChar
 #define QON_DrawChar QON_DrawChar_impl
 #endif
+// Draws character 'c' at (x,y) coordinates, where coordinates are in characters count.
+// 'isUnderCursor' is set to true when the cursor is on this character.
+// 'data' is an optional pointer parameter.
 void QON_DrawChar( int c, int x, int y, int isUnderCursor, void *data );
+
+// Draws the entire console. 'conWidth' and 'conHeight' are in characters count.
 void QON_Draw( int conWidth, int conHeight, void *drawCharParam );
 
-// input 
+// == input ==
+
+// These 
 void QON_MoveRight( int numChars );
 void QON_MoveLeft( int numChars );
 void QON_DelFront( int numChars );
@@ -59,7 +69,7 @@ void QON_Insert( const char *str );
 void QON_Print( const char *str );
 void QON_PageUp( void );
 void QON_PageDown( void );
-void QON_EmitCommand( void );
+void QON_EmitCommand( int bufSize, char *outBuf );
 
 
 
@@ -69,7 +79,7 @@ void QON_EmitCommand( void );
 
 
 // There are two distinct text fields on the console: the 'PAGER' and the 
-// 'COMMAND'. 
+// 'COMMAND': 
 // The 'PAGER' is where the Print-s are logged.
 // The 'COMMAND' is where the command editing by moving the 'CURSOR' 
 // around is done. 
@@ -94,7 +104,7 @@ void QON_EmitCommand( void );
 #ifndef QON_PROMPT
 #define QON_PROMPT "] "
 #endif
-#define QON_PROMPT_LEN (sizeof(QON_PROMPT)-1);
+#define QON_PROMPT_LEN (sizeof(QON_PROMPT)-1)
 
 #ifdef QON_DEBUG
 #define QON_TRAILING_SPACE "<"
@@ -123,12 +133,6 @@ static inline int QON_Len( const char *p ) {
     int n;
     for ( n = 0; p[n]; n++ ) {}
     return n;
-}
-
-static inline void QON_Cpy( char *dst, const char *src, int sz ) {
-    for ( int i = 0; i < sz; i++ ) {
-        dst[i] = src[i];
-    }
 }
 
 static inline void QON_Zero( char *p, int n ) {
@@ -186,7 +190,9 @@ void QON_Insert( const char *str ) {
         for ( int i = bufLen - 1; i >= qon_cursor; i-- ) {
             qon_cmdBuf[i + shift] = qon_cmdBuf[i];
         }
-        QON_Cpy( &qon_cmdBuf[qon_cursor], str, shift );
+        for ( int i = 0; i < shift; i++ ) {
+            qon_cmdBuf[qon_cursor + i] = str[i];
+        }
         // deletion always fills zeros, no need to zero terminate here
         qon_cursor += shift;
     }
@@ -204,9 +210,18 @@ void QON_Print( const char *str ) {
     QON_Printn( str, QON_MAX_PAGER );
 }
 
-void QON_EmitCommand( void ) {
+void QON_EmitCommand( int bufSize, char *outBuf ) {
     // skip the trailing space
-    QON_Printn( qon_cmdBuf, QON_Len( qon_cmdBuf ) - 1 );
+    int len = QON_Len( qon_cmdBuf ) - 1;
+
+    // leave out terminating zero and prompt
+    int n = QON_Min( bufSize - 1, len - QON_PROMPT_LEN );
+    for ( int i = 0; i < n; i++ ) {
+        outBuf[i] = qon_cmdBuf[QON_PROMPT_LEN + i];
+    }
+    outBuf[n] = 0;
+
+    QON_Printn( qon_cmdBuf, len );
     QON_Print( "\n" );
     QON_MoveLeft( QON_MAX_CMD );
     QON_DelFront( QON_MAX_CMD );
@@ -223,6 +238,14 @@ void QON_PageDown( void ) {
 static inline int QON_GetPagerChar( int i ) {
     int mask = QON_MAX_PAGER - 1;
     return qon_pagerHead - i >= QON_MAX_PAGER ? 0 : qon_pager[i & mask];
+}
+
+static inline int QON_IsLineInc( int idx, int x, int conWidth, int c ) {
+    // handle the case where the last character in the buffer is not a new line
+    return ( idx == qon_pagerHead - 1 && c != '\n' ) 
+            || x == conWidth - 1 
+            || ! c 
+            || c == '\n';
 }
 
 void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
@@ -262,98 +285,62 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
     }
 
     // == pager ==
+    {
+        int maxY = conHeight - numCmdLines;
+        int start = QON_Min( qon_pagerHead, qon_currPage ) - 1;
+        int x = 0;
+        int y = maxY;
 
-    int last = QON_Min( qon_pagerHead, qon_currPage );
-    int max = conWidth * ( conHeight - numCmdLines );
+        while ( 1 ) {
+            int c = QON_GetPagerChar( start );
 
-    // scan for page-down
-    qon_nextPage = qon_pagerHead;
-    for ( int i = last, caret = 0, n = 0; i < qon_pagerHead; i++ ) {
-        int c = QON_GetPagerChar( i );
-
-        if ( ! c || c == '\n' ) {
-            int r = caret % conWidth;
-            if ( n ) {
-                caret += r ? conWidth - r : 0;
-            } else {
-                caret += r ? conWidth - r : conWidth;
-            }
-            n = 0;
-        } else {
-            caret++;
-            n++;
-        } 
-        
-        if ( caret > max ) {
-            qon_nextPage = i;
-            break;
-        } 
-    }
-
-    // both page index and pager head are one char off
-    last--;
-
-    // mandatory new line at buf last, skip it if in buffer
-    if ( QON_GetPagerChar( last ) == '\n' ) {
-        last--;
-    } 
-
-    // scan for prev page as we go
-    qon_prevPage = 0;
-
-    int pgrCaret = max - 1;
-
-    for ( int i = last; ; ) {
-
-        // find a string enclosed by new line/term zero
-
-        int n;
-        for ( n = 0; n < max * 2; n++ ) {
-            int c = QON_GetPagerChar( i - n );
-
-            // handle new lines specially
-            // i.e. new line at the end of a full line is ignored
-
-            if ( ! c || c == '\n' ) {
-                if ( ! n ) {
-                    pgrCaret -= conWidth;
-                } else {
-                    int r = n % conWidth;
-                    pgrCaret -= r ? conWidth - r : 0;
-                }
+            if ( y < 0 && ( ! c || c == '\n' ) ) {
+                x = 0;
                 break;
             }
-        }
-
-        // go up along the string print characters and scan for prev page
-
-        for ( int j = 0; j <= n; j++ ) {
-            if ( pgrCaret < 0 ) {
-                // prev page right above screen
-                qon_prevPage = QON_Max( i + 1, qon_prevPage );
-                return;
+            
+            if ( QON_IsLineInc( start, x, conWidth, c ) ) {
+                x = 0;
+                y--;
+            } else {
+                x++;
             }
 
-            int c = QON_GetPagerChar( i );
-            int x = pgrCaret % conWidth;
-            int y = pgrCaret / conWidth;
-
-            if ( ! c ) {
-                // prev page at the buffer start
-                qon_prevPage = QON_Max( i + 1, qon_prevPage );
-                QON_DrawChar( '~', 0, y, 0, drawCharParam );
-            } else if ( c == '\n' ) {
-#ifdef QON_DEBUG
-                // debug draw the new lines
-                QON_DrawChar( '0' + ( i % 10 ), x, y, 0, drawCharParam );
-#endif
-            } else {
-                QON_DrawChar( c, x, y, 0, drawCharParam );
-                pgrCaret--;
-            } 
-
-            i--;
+            start--;
         }
+
+        int i;
+
+        for ( i = start + 1; y < 2 * maxY - 1; i++ ) {
+            int c = QON_GetPagerChar( i );
+
+            if ( y >= 0 && y < maxY ) {
+                if ( y == 1 ) {
+                    if ( qon_pagerHead - i < QON_MAX_PAGER ) {
+                        qon_prevPage = i;
+                    }
+                }
+
+                if ( ! c ) {
+                    QON_DrawChar( '~', 0, y, 0, drawCharParam );
+                } else if ( c == '\n' ) {
+#ifdef QON_DEBUG
+                    // debug draw the new lines
+                    QON_DrawChar( '0' + ( i % 10 ), x, y, 0, drawCharParam );
+#endif
+                } else {
+                    QON_DrawChar( c, x, y, 0, drawCharParam );
+                }
+            }
+
+            if ( QON_IsLineInc( i, x, conWidth, c ) ) {
+                x = 0;
+                y++;
+            } else {
+                x++;
+            } 
+        }
+        qon_nextPage = i;
     }
 }
 

@@ -12,6 +12,7 @@ This lib PROVIDES:
    - paging 
 
 This lib DOES NOT PROVIDE:
+* (font) rendering of any kind
 * utf-8 / multibyte support
 * advanced cursor movement i.e. between words
 * commands parsing, autocompletion, history, etc.
@@ -21,4 +22,4 @@ This lib DOES NOT PROVIDE:
 
 * Invoke `QON_Draw()` somewhere in your game/render loop, which will eventually call back your version of `QON_DrawChar()`.
 * Wire up the input routines i.e. to the matching key events in your code.
-* See `qonche.h` for details.
+* See [qonche.h](https://github.com/zloedi/qonche/blob/main/qonche.h) for details.

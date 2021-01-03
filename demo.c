@@ -1,10 +1,17 @@
 #define QONCHE_IMPLEMENTATION
+#ifndef __EMSCRIPTEN__
 #define QON_DEBUG
+#endif
 #define QON_DrawChar DrawChar
 #include "qonche.h"
 
 #include <stdio.h>
-#include <SDL.h>
+#include <SDL2/SDL.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
+// apple II font
 
 #define APPLEIIF_WIDTH 96
 #define APPLEIIF_HEIGHT 64
@@ -81,19 +88,6 @@ const unsigned char x_font[APPLEIIF_WIDTH * APPLEIIF_HEIGHT / 8] = {
 };
 
 static SDL_Texture* CreateTexture( SDL_Renderer *renderer ) {
-#if 0 // convert byte-per-pixel to bit-per-pixel
-    for ( int y = 0; y < APPLEIIF_HEIGHT; y++ ) {
-        for ( int x = 0; x < APPLEIIF_WIDTH; x += 8 ) {
-            int c = 0;
-            for ( int i = 0; i < 8; i++ ) {
-                int bit = appleii_font[x + i + y * APPLEIIF_WIDTH] ? 1 : 0;
-                c |= bit << ( 7 - i );
-            }
-            printf( "0x%.2x,", c );
-        }
-        printf( "\n" );
-    }
-#endif
     SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "0" );
     SDL_Texture *tex = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_ABGR8888, 
                     SDL_TEXTUREACCESS_STATIC, APPLEIIF_WIDTH, APPLEIIF_HEIGHT );
@@ -149,7 +143,63 @@ void DrawChar( int c, int x, int y, int isUnderCursor, void *data ) {
     SDL_RenderCopy( x_renderer, x_fontTex, &src, &dst1 );
 }
 
+void MainLoop( void *arg ) {
+    int *quit = arg;
+    SDL_Event event;
+    while ( SDL_PollEvent( &event ) ) {
+        int code = event.key.keysym.sym;
+        switch( event.type ) {
+            case SDL_TEXTINPUT:
+                QON_Insert( event.text.text );
+                break;
+            case SDL_KEYDOWN:
+                switch ( code ) {
+                    case SDLK_RIGHT:     QON_MoveRight( 1 ); break;
+                    case SDLK_LEFT:      QON_MoveLeft( 1 );  break;
+                    case SDLK_DELETE:    QON_DelFront( 1 );  break;
+                    case SDLK_BACKSPACE: QON_DelBack( 1 );   break;
+                    case SDLK_PAGEUP:    QON_PageUp();       break;
+                    case SDLK_PAGEDOWN:  QON_PageDown();     break;
+                    case SDLK_RETURN: {
+                        char buf[1024];
+                        QON_EmitCommand( 1024, buf );
+                    }
+                    break;
+                    default: break;
+                }
+                break;
+            case SDL_QUIT:
+                *quit = 1;
+                break;
+            default:
+                break;
+        }
+    }
+
+    SDL_SetRenderDrawColor( x_renderer, 64, 64, 64, 255 );
+    SDL_RenderClear( x_renderer );
+
+    // just to show param passing
+    static dcParam_t prm = {
+        .x = 10, .y = 10,
+        .scaleX = 2, .scaleY = 2,
+        .spaceX = 1, .spaceY = 3,
+    };
+    int cellW = prm.scaleX * ( APPLEIIF_CW + prm.spaceX );
+    int cellH = prm.scaleY * ( APPLEIIF_CH + prm.spaceY );
+    int w, h;
+    SDL_GetWindowSize( x_window, &w, &h );
+    QON_Draw( ( w - prm.x * 2 ) / cellW, ( h - prm.y * 2 ) / cellH, &prm );
+
+    SDL_RenderPresent( x_renderer );
+    SDL_Delay( 10 );
+}
+
 int main( int argc, char *argv[] ) {
+#ifdef __EMSCRIPTEN__
+    SDL_Init( SDL_INIT_VIDEO );
+    SDL_CreateWindowAndRenderer( 640, 480, 0, &x_window, &x_renderer );
+#else
     if ( SDL_InitSubSystem( SDL_INIT_VIDEO ) < 0 ) {
         fprintf( stderr, "SDL could not initialize video! SDL Error: %s\n", 
                                                             SDL_GetError() );
@@ -177,47 +227,25 @@ int main( int argc, char *argv[] ) {
                                                             SDL_GetError() );
     }
     printf( "SDL initialized.\n" );
+#endif
+
     x_fontTex = CreateTexture( x_renderer );
-    dcParam_t prm = {
-        .x = 100, .y = 100,
-        .scaleX = 2, .scaleY = 2,
-        .spaceX = 1, .spaceY = 3,
-    };
     int quit = 0;
-    while ( ! quit ) {
-        SDL_Event event;
-        while ( SDL_PollEvent( &event ) ) {
-            int code = event.key.keysym.sym;
-            switch( event.type ) {
-                case SDL_TEXTINPUT:
-                    QON_Insert( event.text.text );
-                    break;
-                case SDL_KEYDOWN:
-                    switch ( code ) {
-                        case SDLK_RIGHT:     QON_MoveRight( 1 ); break;
-                        case SDLK_LEFT:      QON_MoveLeft( 1 );  break;
-                        case SDLK_DELETE:    QON_DelFront( 1 );  break;
-                        case SDLK_BACKSPACE: QON_DelBack( 1 );   break;
-                        case SDLK_PAGEUP:    QON_PageUp();       break;
-                        case SDLK_PAGEDOWN:  QON_PageDown();     break;
-                        case SDLK_RETURN:    QON_EmitCommand();  break;
-                        default: break;
-                    }
-                    break;
-                case SDL_QUIT:
-                    quit = 1;
-                    break;
-                default:
-                    break;
-            }
+
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop_arg( MainLoop, &quit, -1, 1 );
+#else
+    while ( 1 ) {
+        MainLoop( &quit );
+        if ( quit ) {
+            break;
         }
-        SDL_SetRenderDrawColor( x_renderer, 64, 64, 64, 255 );
-        SDL_RenderClear( x_renderer );
-        int w, h;
-        SDL_GetWindowSize( x_window, &w, &h );
-        QON_Draw( 20, 10, &prm );
-        SDL_RenderPresent( x_renderer );
-        SDL_Delay( 10 );
     }
+#endif
+
+    SDL_DestroyRenderer( x_renderer );
+    SDL_DestroyWindow( x_window );
+    SDL_Quit();
+
     return 0;
 }
