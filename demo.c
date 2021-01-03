@@ -1,7 +1,9 @@
-#define QONCHE_IMPLEMENTATION
-#ifndef __EMSCRIPTEN__
+
+// enable this for tiny buffers and visible new lines
+#if 0
 #define QON_DEBUG
 #endif
+#define QONCHE_IMPLEMENTATION
 #define QON_DrawChar DrawChar
 #include "qonche.h"
 
@@ -196,45 +198,15 @@ void MainLoop( void *arg ) {
 }
 
 int main( int argc, char *argv[] ) {
-#ifdef __EMSCRIPTEN__
     SDL_Init( SDL_INIT_VIDEO );
     SDL_CreateWindowAndRenderer( 640, 480, 0, &x_window, &x_renderer );
-#else
-    if ( SDL_InitSubSystem( SDL_INIT_VIDEO ) < 0 ) {
-        fprintf( stderr, "SDL could not initialize video! SDL Error: %s\n", 
-                                                            SDL_GetError() );
-        return -1;
-    }
-    x_window = SDL_CreateWindow( "qonche demo",
-                                    SDL_WINDOWPOS_UNDEFINED, 
-                                    SDL_WINDOWPOS_UNDEFINED, 
-                                    1024, 768,
-                                    SDL_WINDOW_RESIZABLE );
-    if( x_window == NULL ) {
-        fprintf( stderr, "Window could not be created! SDL Error: %s\n", 
-                                                            SDL_GetError() );
-        return -1;
-    }
-    SDL_SetHint( SDL_HINT_RENDER_DRIVER, "opengl" );
-    x_renderer = SDL_CreateRenderer( x_window, -1, SDL_RENDERER_ACCELERATED );
-    if ( x_renderer == NULL ) {
-        fprintf( stderr, "Renderer could not be created! SDL Error: %s\n", 
-                                                            SDL_GetError() );
-        return -1;
-    }
-    if ( SDL_InitSubSystem( SDL_INIT_TIMER ) < 0 ) {
-        fprintf( stderr, "SDL could not initialize! SDL Error: %s", 
-                                                            SDL_GetError() );
-    }
-    printf( "SDL initialized.\n" );
-#endif
-
     x_fontTex = CreateTexture( x_renderer );
     int quit = 0;
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg( MainLoop, &quit, -1, 1 );
 #else
+    SDL_SetWindowTitle( x_window, "qonche" );
     while ( 1 ) {
         MainLoop( &quit );
         if ( quit ) {
