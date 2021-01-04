@@ -60,7 +60,6 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam );
 
 // == input ==
 
-// These 
 void QON_MoveRight( int numChars );
 void QON_MoveLeft( int numChars );
 void QON_DelFront( int numChars );
