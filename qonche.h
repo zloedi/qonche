@@ -21,6 +21,7 @@
 // * advanced cursor movement i.e. between words
 // * commands parsing, autocompletion, history, etc.
 // * printf-like formatting
+// * multithreading support
 //
 //
 // Usage
@@ -31,11 +32,6 @@
 // QON_DrawChar().
 // 3. Invoke QON_Draw() which will eventually call back QON_DrawChar().
 // 4. Wire up the input routines i.e. to the matching key events in your code.
-
-// TODO: expose the command buffer so it could be processed
-// TODO: support for <tag> </tag> tags maybe supply a mechanism to callback on any char sequence
-// TODO: API to access a sequence of characters on screen i.e. by mouse selection
-
 
 #ifndef QONCHE_H
 #define QONCHE_H
@@ -62,12 +58,15 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam );
 
 void QON_MoveRight( int numChars );
 void QON_MoveLeft( int numChars );
-void QON_DelFront( int numChars );
-void QON_DelBack( int numChars );
+// Deletes 'numChars' starting at the cursor
+void QON_Delete( int numChars );
+// Deletes 'numChars' to the left of the cursor, excluding the cursor
+void QON_Backspace( int numChars );
 void QON_Insert( const char *str );
 void QON_Print( const char *str );
 void QON_PageUp( void );
 void QON_PageDown( void );
+// Prints the contents of the command field and clears the command
 void QON_EmitCommand( int bufSize, char *outBuf );
 
 
@@ -84,10 +83,12 @@ void QON_EmitCommand( int bufSize, char *outBuf );
 // around is done. 
 
 
+// TODO: expose the command buffer so it could be processed
+// TODO: support for <tag> </tag> tags maybe supply a mechanism to callback on any char sequence
+// TODO: API to access a sequence of characters on screen i.e. by mouse selection
 
-// You can redefine the following macros in order to change buffer sizes, prompt 
-// string, etc. Keep them power of two.
 
+// Redefine these macros for custom sizes (keep them power of two)
 #ifndef QON_MAX_CMD
 #define QON_MAX_CMD 512
 #endif
@@ -100,6 +101,7 @@ void QON_EmitCommand( int bufSize, char *outBuf );
 #endif
 #endif
 
+// Redefine this macro for custom prompt
 #ifndef QON_PROMPT
 #define QON_PROMPT "] "
 #endif
@@ -152,7 +154,7 @@ void QON_MoveLeft( int numChars ) {
     qon_cursor -= numChars;
 }
 
-void QON_DelFront( int numChars ) {
+void QON_Delete( int numChars ) {
     int bufLen = QON_Len( qon_cmdBuf );
     // keep the trailing space
     int max = ( bufLen - 1 ) - qon_cursor;
@@ -166,7 +168,7 @@ void QON_DelFront( int numChars ) {
     }
 }
 
-void QON_DelBack( int numChars ) {
+void QON_Backspace( int numChars ) {
     // always keep the prompt
     int max = qon_cursor - QON_PROMPT_LEN;
     int shift = QON_Min( numChars, max );
@@ -223,7 +225,7 @@ void QON_EmitCommand( int bufSize, char *outBuf ) {
     QON_Printn( qon_cmdBuf, len );
     QON_Print( "\n" );
     QON_MoveLeft( QON_MAX_CMD );
-    QON_DelFront( QON_MAX_CMD );
+    QON_Delete( QON_MAX_CMD );
 }
 
 void QON_PageUp( void ) {

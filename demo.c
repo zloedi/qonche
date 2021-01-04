@@ -158,8 +158,8 @@ void MainLoop( void *arg ) {
                 switch ( code ) {
                     case SDLK_RIGHT:     QON_MoveRight( 1 ); break;
                     case SDLK_LEFT:      QON_MoveLeft( 1 );  break;
-                    case SDLK_DELETE:    QON_DelFront( 1 );  break;
-                    case SDLK_BACKSPACE: QON_DelBack( 1 );   break;
+                    case SDLK_DELETE:    QON_Delete( 1 );    break;
+                    case SDLK_BACKSPACE: QON_Backspace( 1 ); break;
                     case SDLK_PAGEUP:    QON_PageUp();       break;
                     case SDLK_PAGEDOWN:  QON_PageDown();     break;
                     case SDLK_RETURN: {

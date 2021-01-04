@@ -17,6 +17,7 @@ This lib DOES NOT PROVIDE:
 * advanced cursor movement i.e. between words
 * commands parsing, autocompletion, history, etc.
 * printf-like formatting
+* multithreading support
 
 ### Usage
 
