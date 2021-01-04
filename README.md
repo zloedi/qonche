@@ -1,5 +1,5 @@
 # qonche 
-A minimal quake-like console in a single C header (stb-style) with no dependencies. Try the live demo here: https://zloedi.github.io/qonche/
+A minimal quake style debug console in a single C header with no dependencies. Try the live demo here: https://zloedi.github.io/qonche/
 
 This lib PROVIDES: 
 * editing:
