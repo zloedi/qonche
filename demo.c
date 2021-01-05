@@ -145,6 +145,15 @@ void DrawChar( int c, int x, int y, int isUnderCursor, void *data ) {
     SDL_RenderCopy( x_renderer, x_fontTex, &src, &dst1 );
 }
 
+static inline const char* va( const char *fmt, ... ) {
+    static char buf[1024];
+    va_list argptr;
+    va_start( argptr, fmt );
+    vsnprintf( buf, 1024, fmt, argptr );
+    va_end( argptr );
+    return buf;
+}
+
 void MainLoop( void *arg ) {
     int *quit = arg;
     SDL_Event event;
@@ -164,7 +173,14 @@ void MainLoop( void *arg ) {
                     case SDLK_PAGEDOWN:  QON_PageDown();     break;
                     case SDLK_RETURN: {
                         char buf[1024];
+                        const int max = 16;
                         QON_EmitCommand( 1024, buf );
+                        int len = strlen( buf );
+                        buf[max] = 0;
+                        QON_Print( va( "You typed '%s%s'\n", buf,
+                                                    len > max 
+                                                    ? " blah blah ... " 
+                                                    : "" ) );
                     }
                     break;
                     default: break;
