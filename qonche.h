@@ -312,14 +312,17 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
 
         int i;
 
+        qon_prevPage = qon_currPage;
+
         for ( i = start + 1; y < 2 * maxY - 1; i++ ) {
             int c = QON_GetPagerChar( i );
 
             if ( y >= 0 && y < maxY ) {
-                if ( y == 1 ) {
-                    if ( qon_pagerHead - i < QON_MAX_PAGER ) {
-                        qon_prevPage = i;
-                    }
+
+                // previous page ends with the first line of the current one
+                // don't bother going above any zeros/out of buffer
+                if ( y == 1 && c ) {
+                    qon_prevPage = i;
                 }
 
                 if ( ! c ) {
@@ -341,6 +344,7 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
                 x++;
             } 
         }
+
         qon_nextPage = i;
     }
 }
