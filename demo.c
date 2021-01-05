@@ -1,4 +1,3 @@
-
 // enable this for tiny buffers and visible new lines
 #if 0
 #define QON_DEBUG
@@ -215,8 +214,27 @@ void MainLoop( void *arg ) {
 
 int main( int argc, char *argv[] ) {
     SDL_Init( SDL_INIT_VIDEO );
-    SDL_CreateWindowAndRenderer( 640, 480, 0, &x_window, &x_renderer );
+    int flags;
+#ifdef __EMSCRIPTEN__
+    flags = 0;
+#else
+    flags = SDL_WINDOW_RESIZABLE;
+#endif
+    SDL_CreateWindowAndRenderer( 640, 480, flags, &x_window, &x_renderer );
     x_fontTex = CreateTexture( x_renderer );
+      
+    QON_Print( "\n" );
+    QON_Print( "                  /   \\     \n" );
+    QON_Print( "                 |     |     \n" );
+    QON_Print( "                  \\_T_/ onche\n" );
+    QON_Print( "                    |        \n" );
+    QON_Print( "\n" );
+    QON_Print( "'qonche' is a quake style console in a\nsingle C header.\n" );
+    QON_Print( "\n" );
+    QON_Print( "Enter a command and watch it being printed to the log. "
+                                                            "It's magic!..\n" );
+    QON_Print( "\n" );
+
     int quit = 0;
 
 #ifdef __EMSCRIPTEN__
