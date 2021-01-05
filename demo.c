@@ -194,7 +194,7 @@ void MainLoop( void *arg ) {
         }
     }
 
-    SDL_SetRenderDrawColor( x_renderer, 64, 64, 64, 255 );
+    SDL_SetRenderDrawColor( x_renderer, 40, 45, 50, 255 );
     SDL_RenderClear( x_renderer );
 
     // just to show param passing
