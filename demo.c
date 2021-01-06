@@ -231,7 +231,7 @@ int main( int argc, char *argv[] ) {
     QON_Print( "\n" );
     QON_Print( "'qonche' is a quake style console in a\nsingle C header.\n" );
     QON_Print( "\n" );
-    QON_Print( "Enter a command and watch it being printed to the log. "
+    QON_Print( "Enter a command and watch it being printed\nto the log. "
                                                             "It's magic!..\n" );
     QON_Print( "\n" );
 
