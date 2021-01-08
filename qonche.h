@@ -3,7 +3,7 @@
 // For a copy, see https://opensource.org/licenses/MIT.
 
 
-// A tiny quake-like console in a single C header with no dependencies.
+// A tiny quake style debug console in a single C header with no dependencies.
 //
 // This lib PROVIDES: 
 // * editing:
@@ -48,8 +48,8 @@ extern "C" {
 #endif
 // Draws character 'c' at (x,y) coordinates, where coordinates are in characters count.
 // 'isUnderCursor' is set to true when the cursor is on this character.
-// 'data' is an optional pointer parameter.
-void QON_DrawChar( int c, int x, int y, int isUnderCursor, void *data );
+// 'drawCharParam' is an optional pointer parameter.
+void QON_DrawChar( int c, int x, int y, int isUnderCursor, void *drawCharParam );
 
 // Draws the entire console. 'conWidth' and 'conHeight' are in characters count.
 void QON_Draw( int conWidth, int conHeight, void *drawCharParam );
@@ -95,7 +95,7 @@ void QON_EmitCommand( int bufSize, char *outBuf );
 
 #ifndef QON_MAX_PAGER
 #ifdef QON_DEBUG
-#define QON_MAX_PAGER (1024)
+#define QON_MAX_PAGER 1024
 #else
 #define QON_MAX_PAGER (16*1024)
 #endif
