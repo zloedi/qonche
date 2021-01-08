@@ -124,7 +124,7 @@ SDL_Texture *x_fontTex;
 void DrawChar( int c, int x, int y, int isUnderCursor, void *data ) {
     dcParam_t *prm = data;
     int blink = SDL_GetTicks() & 256;
-    int trueChar = ( isUnderCursor && blink ) ? 127 : c;
+    int trueChar = ( isUnderCursor & blink ) ? 127 : c;
     int idx = trueChar & ( APPLEIIF_ROWS * APPLEIIF_CLMS - 1 );
     SDL_SetTextureAlphaMod( x_fontTex, 0xff );
     SDL_SetTextureBlendMode( x_fontTex, SDL_BLENDMODE_BLEND );
@@ -135,13 +135,13 @@ void DrawChar( int c, int x, int y, int isUnderCursor, void *data ) {
         APPLEIIF_CH,
     };
     SDL_SetTextureColorMod( x_fontTex, 0xff, 0xff, 0xff );
-    SDL_Rect dst1= { 
+    SDL_Rect dst = { 
         prm->x + x * ( APPLEIIF_CW + prm->spaceX ) * prm->scaleX, 
         prm->y + y * ( APPLEIIF_CH + prm->spaceY ) * prm->scaleY, 
         APPLEIIF_CW * prm->scaleX, 
         APPLEIIF_CH * prm->scaleY,
     };
-    SDL_RenderCopy( x_renderer, x_fontTex, &src, &dst1 );
+    SDL_RenderCopy( x_renderer, x_fontTex, &src, &dst );
 }
 
 static inline const char* va( const char *fmt, ... ) {
@@ -171,14 +171,14 @@ void MainLoop( void *arg ) {
                     case SDLK_PAGEUP:    QON_PageUp();       break;
                     case SDLK_PAGEDOWN:  QON_PageDown();     break;
                     case SDLK_RETURN: {
-                        char buf[1024];
+                        char buf[64];
                         const int max = 16;
-                        QON_EmitCommand( 1024, buf );
+                        QON_EmitCommand( sizeof( buf ), buf );
                         int len = strlen( buf );
                         buf[max] = 0;
                         QON_Print( va( "You typed '%s%s'\n", buf,
                                                     len > max 
-                                                    ? " blah blah ... " 
+                                                    ? " blah blah ..." 
                                                     : "" ) );
                     }
                     break;
