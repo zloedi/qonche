@@ -124,7 +124,7 @@ SDL_Texture *x_fontTex;
 void DrawChar( int c, int x, int y, int isUnderCursor, void *data ) {
     dcParam_t *prm = data;
     int blink = SDL_GetTicks() & 256;
-    int trueChar = ( isUnderCursor & blink ) ? 127 : c;
+    int trueChar = ( isUnderCursor && blink ) ? 127 : c;
     int idx = trueChar & ( APPLEIIF_ROWS * APPLEIIF_CLMS - 1 );
     SDL_SetTextureAlphaMod( x_fontTex, 0xff );
     SDL_SetTextureBlendMode( x_fontTex, SDL_BLENDMODE_BLEND );
