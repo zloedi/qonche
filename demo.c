@@ -213,6 +213,10 @@ void MainLoop( void *arg ) {
 }
 
 int main( int argc, char *argv[] ) {
+    // shut up gcc
+    (void)argc;
+    (void)argv;
+
     SDL_Init( SDL_INIT_VIDEO );
     int flags;
 #ifdef __EMSCRIPTEN__

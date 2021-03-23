@@ -120,7 +120,7 @@ static int qon_pagerHead = QON_MAX_PAGER;
 static char qon_pager[QON_MAX_PAGER];
 
 static int qon_cursor = QON_PROMPT_LEN;
-static char qon_cmdBuf[QON_MAX_CMD] = (QON_PROMPT QON_TRAILING_SPACE);
+static char qon_cmdBuf[QON_MAX_CMD] = QON_PROMPT QON_TRAILING_SPACE;
 
 static inline int QON_Min( int a, int b ) {
     return a < b ? a : b;
@@ -250,39 +250,41 @@ static inline int QON_IsLineInc( int idx, int x, int conWidth, int c ) {
 }
 
 void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
-    int numCmdLines;
+    int numCmdLines = 0;
 
     // == command field ==
 
-    // ignore the trailing space when counting lines
-    int cmdLen = QON_Len( qon_cmdBuf ) - 1;
+    {
+        // ignore the trailing space when counting lines
+        int cmdLen = QON_Len( qon_cmdBuf ) - 1;
 
-    // command may take more than one screen of lines, clamp it to screen
-    // always atleast one line
-    numCmdLines = QON_Min( conHeight, cmdLen / conWidth + 1 );
+        // command may take more than one screen of lines, clamp it to screen
+        // always atleast one line
+        numCmdLines = QON_Min( conHeight, cmdLen / conWidth + 1 );
 
-    // cursor is always inside the window
-    int numLinesToCursor = qon_cursor / conWidth + 1;
+        // cursor is always inside the window
+        int numLinesToCursor = qon_cursor / conWidth + 1;
 
-    int start = QON_Max( numLinesToCursor - conHeight, 0 ) * conWidth;
-    int numChars = QON_Min( conHeight * conWidth, QON_MAX_CMD - start );
-    int cmdCaret = ( conHeight - numCmdLines ) * conWidth;
-    int caretCursor = cmdCaret + qon_cursor - start;
-    for ( int i = 0; i < numChars; i++, cmdCaret++ ) {
-        int c = qon_cmdBuf[i + start]; 
+        int start = QON_Max( numLinesToCursor - conHeight, 0 ) * conWidth;
+        int numChars = QON_Min( conHeight * conWidth, QON_MAX_CMD - start );
+        int cmdCaret = ( conHeight - numCmdLines ) * conWidth;
+        int caretCursor = cmdCaret + qon_cursor - start;
+        for ( int i = 0; i < numChars; i++, cmdCaret++ ) {
+            int c = qon_cmdBuf[i + start]; 
 
-        if ( ! c ) {
-            break;
+            if ( ! c ) {
+                break;
+            }
+
+            int x = cmdCaret % conWidth;
+            int y = cmdCaret / conWidth;
+            QON_DrawChar( c, x, y, cmdCaret == caretCursor, drawCharParam );
         }
 
-        int x = cmdCaret % conWidth;
-        int y = cmdCaret / conWidth;
-        QON_DrawChar( c, x, y, cmdCaret == caretCursor, drawCharParam );
-    }
-
-    // out of lines for the pager
-    if ( numCmdLines == conHeight ) {
-        return;
+        // out of lines for the pager
+        if ( numCmdLines == conHeight ) {
+            return;
+        }
     }
 
     // == pager ==
