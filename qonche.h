@@ -63,7 +63,7 @@ void QON_Delete( int numChars );
 // Deletes 'numChars' to the left of the cursor, excluding the cursor
 void QON_Backspace( int numChars );
 void QON_Insert( const char *str );
-void QON_Print( const char *str );
+int QON_Print( const char *str );
 void QON_PageUp( void );
 void QON_PageDown( void );
 // Prints the contents of the command field and clears the command
@@ -199,16 +199,18 @@ void QON_Insert( const char *str ) {
     }
 }
 
-static void QON_Printn( const char *str, int n ) {
-    for ( int i = 0; i < n && str[i]; i++, qon_pagerHead++ ) {
+static int QON_Printn( const char *str, int n ) {
+    int i;
+    for ( i = 0; i < n && str[i]; i++, qon_pagerHead++ ) {
         qon_pager[qon_pagerHead & ( QON_MAX_PAGER - 1 )] = str[i];
     }
     qon_pager[qon_pagerHead & ( QON_MAX_PAGER - 1 )] = 0;
     qon_currPage = qon_pagerHead;
+    return i;
 }
 
-void QON_Print( const char *str ) {
-    QON_Printn( str, QON_MAX_PAGER );
+int QON_Print( const char *str ) {
+    return QON_Printn( str, QON_MAX_PAGER );
 }
 
 void QON_EmitCommand( int bufSize, char *outBuf ) {
