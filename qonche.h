@@ -68,6 +68,11 @@ void QON_PageUp( void );
 void QON_PageDown( void );
 // Prints the contents of the command field and clears the command
 void QON_EmitCommand( int bufSize, char *outBuf );
+// Available only if QON_CUSTOM_DRAW_CALLBACKS is enabled.
+// Same as QON_Print but registers an optional 'draw' callback on the first 
+// character of 'str'
+int QON_PrintWithCallback( void ( *cb )( int x, int y, void *param ), 
+                                                            const char *str );
 
 
 
@@ -101,6 +106,8 @@ void QON_EmitCommand( int bufSize, char *outBuf );
 #endif
 #endif
 
+#define QON_MAX_PAGER_MASK (QON_MAX_PAGER - 1)
+
 // Redefine this macro for custom prompt
 #ifndef QON_PROMPT
 #define QON_PROMPT "] "
@@ -111,6 +118,19 @@ void QON_EmitCommand( int bufSize, char *outBuf );
 #define QON_TRAILING_SPACE "<"
 #else
 #define QON_TRAILING_SPACE " "
+#endif
+
+#ifdef QON_CUSTOM_DRAW_CALLBACKS
+static void ( *qon_drawCallbacks[QON_MAX_PAGER] )( int x, int y, void *param );
+#define QON_DrawCallback( i, x, y, param ) \
+                (qon_drawCallbacks[(i)&QON_MAX_PAGER_MASK]((x),(y),(param)))
+#define QON_Printn( str, n ) \
+                QON_PrintWithCallbackn((str),(n),QON_Dummy_f)
+#define QON_PrintWithCallback QON_PrintWithCallback_impl
+#else
+#define QON_DrawCallback(...)
+#define QON_Printn QON_PrintClamp
+#define QON_PrintWithCallback(...)
 #endif
 
 static int qon_prevPage = QON_MAX_PAGER;
@@ -199,15 +219,39 @@ void QON_Insert( const char *str ) {
     }
 }
 
-static int QON_Printn( const char *str, int n ) {
+static int QON_PrintClamp( const char *str, int n ) {
     int i;
     for ( i = 0; i < n && str[i]; i++, qon_pagerHead++ ) {
-        qon_pager[qon_pagerHead & ( QON_MAX_PAGER - 1 )] = str[i];
+        qon_pager[qon_pagerHead & QON_MAX_PAGER_MASK] = str[i];
     }
-    qon_pager[qon_pagerHead & ( QON_MAX_PAGER - 1 )] = 0;
+    qon_pager[qon_pagerHead & QON_MAX_PAGER_MASK] = 0;
     qon_currPage = qon_pagerHead;
     return i;
 }
+
+#ifdef QON_CUSTOM_DRAW_CALLBACKS
+
+static void QON_Dummy_f( int x, int y, void *param ) {(void)x,(void)y,(void)param;}
+
+static int QON_PrintWithCallbackn( const char *str, int n,
+                                    void ( *cb )( int x, int y, void *param ) ) {
+    // replace callbacks in the pager string
+    qon_drawCallbacks[qon_pagerHead & QON_MAX_PAGER_MASK] = cb;
+    for ( int i = 1; i < n && str[i]; i++ ) {
+        int idx = qon_pagerHead + i;
+        qon_drawCallbacks[idx & QON_MAX_PAGER_MASK] = QON_Dummy_f;
+    }
+
+    // actual printing to pager
+    return QON_PrintClamp( str, n );
+}
+
+int QON_PrintWithCallback_impl( void ( *cb )( int x, int y, void *param ), 
+                                                            const char *str ) {
+    return QON_PrintWithCallbackn( str, QON_MAX_PAGER, cb );
+}
+
+#endif // QON_CUSTOM_DRAW_CALLBACKS
 
 int QON_Print( const char *str ) {
     return QON_Printn( str, QON_MAX_PAGER );
@@ -239,8 +283,7 @@ void QON_PageDown( void ) {
 }
 
 static inline int QON_GetPagerChar( int i ) {
-    int mask = QON_MAX_PAGER - 1;
-    return qon_pagerHead - i >= QON_MAX_PAGER ? 0 : qon_pager[i & mask];
+    return qon_pagerHead - i >= QON_MAX_PAGER ? 0 : qon_pager[i & QON_MAX_PAGER_MASK];
 }
 
 static inline int QON_IsLineInc( int idx, int x, int conWidth, int c ) {
@@ -290,6 +333,7 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
     }
 
     // == pager ==
+
     {
         int maxY = conHeight - numCmdLines;
         int start = QON_Min( qon_pagerHead, qon_currPage ) - 1;
@@ -314,10 +358,9 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
             start--;
         }
 
-        int i;
-
         qon_prevPage = qon_currPage;
 
+        int i;
         for ( i = start + 1; y < 2 * maxY - 1; i++ ) {
             int c = QON_GetPagerChar( i );
 
@@ -331,13 +374,16 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
 
                 if ( ! c ) {
                     QON_DrawChar( '~', 0, y, 0, drawCharParam );
-                } else if ( c == '\n' ) {
-#ifdef QON_DEBUG
-                    // debug draw the new lines
-                    QON_DrawChar( '0' + ( i % 10 ), x, y, 0, drawCharParam );
-#endif
                 } else {
-                    QON_DrawChar( c, x, y, 0, drawCharParam );
+                    QON_DrawCallback( i, x, y, drawCharParam );
+                    if ( c == '\n' ) {
+#ifdef QON_DEBUG
+                        // debug draw the new lines
+                        QON_DrawChar( '0' + ( i % 10 ), x, y, 0, drawCharParam );
+#endif
+                    } else {
+                        QON_DrawChar( c, x, y, 0, drawCharParam );
+                    }
                 }
             }
 
