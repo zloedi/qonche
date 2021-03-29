@@ -88,9 +88,7 @@ int QON_PrintWithCallback( void ( *cb )( int x, int y, void *param ),
 // around is done. 
 
 
-// TODO: expose the command buffer so it could be processed
-// TODO: support for <tag> </tag> tags maybe supply a mechanism to callback on any char sequence
-// TODO: API to access a sequence of characters on screen i.e. by mouse selection
+// TODO: Clear-pager API
 
 
 // Redefine these macros for custom sizes (keep them power of two)
