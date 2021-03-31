@@ -119,11 +119,12 @@ int QON_PrintWithCallback( void ( *cb )( int x, int y, void *param ),
 #endif
 
 #ifdef QON_CUSTOM_DRAW_CALLBACKS
+static void *qon_drawCallbacksParams[QON_MAX_PAGER];
 static void ( *qon_drawCallbacks[QON_MAX_PAGER] )( int x, int y, void *param );
 #define QON_DrawCallback( i, x, y, param ) \
                 (qon_drawCallbacks[(i)&QON_MAX_PAGER_MASK]((x),(y),(param)))
 #define QON_Printn( str, n ) \
-                QON_PrintWithCallbackn((str),(n),QON_Dummy_f)
+                QON_PrintWithCallbackn((str),(n),QON_Dummy_f,0)
 #define QON_PrintWithCallback QON_PrintWithCallback_impl
 #else
 #define QON_DrawCallback(...)
@@ -215,6 +216,8 @@ void QON_Insert( const char *str ) {
         // deletion always fills zeros, no need to zero terminate here
         qon_cursor += shift;
     }
+    // cancel the page-up if started typing
+    qon_currPage = qon_pagerHead;
 }
 
 static int QON_PrintClamp( const char *str, int n ) {
@@ -232,8 +235,10 @@ static int QON_PrintClamp( const char *str, int n ) {
 static void QON_Dummy_f( int x, int y, void *param ) {(void)x,(void)y,(void)param;}
 
 static int QON_PrintWithCallbackn( const char *str, int n,
-                                    void ( *cb )( int x, int y, void *param ) ) {
+                                    void ( *cb )( int x, int y, void *param ),
+                                    void *param ) {
     // replace callbacks in the pager string
+    qon_drawCallbacksParams[qon_pagerHead & QON_MAX_PAGER_MASK] = param;
     qon_drawCallbacks[qon_pagerHead & QON_MAX_PAGER_MASK] = cb;
     for ( int i = 1; i < n && str[i]; i++ ) {
         int idx = qon_pagerHead + i;
@@ -245,8 +250,8 @@ static int QON_PrintWithCallbackn( const char *str, int n,
 }
 
 int QON_PrintWithCallback_impl( void ( *cb )( int x, int y, void *param ), 
-                                                            const char *str ) {
-    return QON_PrintWithCallbackn( str, QON_MAX_PAGER, cb );
+                                                void *param, const char *str ) {
+    return QON_PrintWithCallbackn( str, QON_MAX_PAGER, cb, param );
 }
 
 #endif // QON_CUSTOM_DRAW_CALLBACKS
@@ -297,7 +302,8 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
 
     // == command field ==
 
-    {
+    // don't show the prompt if paged up from the head
+    if ( qon_currPage == qon_pagerHead ) {
         // ignore the trailing space when counting lines
         int cmdLen = QON_Len( qon_cmdBuf ) - 1;
 
@@ -323,11 +329,11 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
             int y = cmdCaret / conWidth;
             QON_DrawChar( c, x, y, cmdCaret == caretCursor, drawCharParam );
         }
+    }
 
-        // out of lines for the pager
-        if ( numCmdLines == conHeight ) {
-            return;
-        }
+    // out of lines for the pager
+    if ( numCmdLines >= conHeight ) {
+        return;
     }
 
     // == pager ==
@@ -393,7 +399,8 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
             } 
         }
 
-        qon_nextPage = i;
+        // will eventually overflow around 2GB
+        qon_nextPage = QON_Min( qon_pagerHead, i );
     }
 }
 
