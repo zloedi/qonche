@@ -1,7 +1,3 @@
-// enable this for tiny buffers and visible new lines
-#if 0
-#define QON_DEBUG
-#endif
 #define QONCHE_IMPLEMENTATION
 #define QON_DrawChar DrawChar
 #include "qonche.h"
@@ -190,7 +186,7 @@ void MainLoop( void *arg ) {
     int cellH = prm.scaleY * ( APPLEIIF_CH + prm.spaceY );
     int w, h;
     SDL_GetWindowSize( x_window, &w, &h );
-    QON_Draw( ( w - prm.x * 2 ) / cellW, ( h - prm.y * 2 ) / cellH, &prm );
+    QON_DrawEx( ( w - prm.x * 2 ) / cellW, ( h - prm.y * 2 ) / cellH, 0, &prm );
 
     SDL_RenderPresent( x_renderer );
     SDL_Delay( 10 );

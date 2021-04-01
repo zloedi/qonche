@@ -52,7 +52,8 @@ extern "C" {
 void QON_DrawChar( int c, int x, int y, int isUnderCursor, void *drawCharParam );
 
 // Draws the entire console. 'conWidth' and 'conHeight' are in characters count.
-void QON_Draw( int conWidth, int conHeight, void *drawCharParam );
+void QON_Draw( int conWidth, int conHeight );
+void QON_DrawEx( int conWidth, int conHeight, int skipCommandLine, void *drawCharParam );
 
 // == input ==
 
@@ -286,7 +287,9 @@ void QON_PageDown( void ) {
 }
 
 static inline int QON_GetPagerChar( int i ) {
-    return qon_pagerHead - i >= QON_MAX_PAGER ? 0 : qon_pager[i & QON_MAX_PAGER_MASK];
+    return qon_pagerHead - i >= QON_MAX_PAGER 
+                                            ? 0 
+                                            : qon_pager[i & QON_MAX_PAGER_MASK];
 }
 
 static inline int QON_IsLineInc( int idx, int x, int conWidth, int c ) {
@@ -297,13 +300,14 @@ static inline int QON_IsLineInc( int idx, int x, int conWidth, int c ) {
             || c == '\n';
 }
 
-void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
+void QON_DrawEx( int conWidth, int conHeight, int skipCommandLine, 
+                                                        void *drawCharParam ) {
     int numCmdLines = 0;
 
     // == command field ==
 
     // don't show the prompt if paged up from the head
-    if ( qon_currPage == qon_pagerHead ) {
+    if ( qon_currPage == qon_pagerHead && ! skipCommandLine ) {
         // ignore the trailing space when counting lines
         int cmdLen = QON_Len( qon_cmdBuf ) - 1;
 
@@ -399,9 +403,13 @@ void QON_Draw( int conWidth, int conHeight, void *drawCharParam ) {
             } 
         }
 
-        // will eventually overflow around 2GB
+        // will eventually overflow
         qon_nextPage = QON_Min( qon_pagerHead, i );
     }
+}
+
+void QON_Draw( int conWidth, int conHeight ) {
+    QON_DrawEx( conWidth, conHeight, 0, 0 );
 }
 
 #endif // QONCHE_IMPLEMENTATION
