@@ -1,7 +1,3 @@
-// enable this for tiny buffers and visible new lines
-#if 0
-#define QON_DEBUG
-#endif
 #define QON_CUSTOM_DRAW_CALLBACKS
 #define QON_USE_PAGER_CALLBACKS
 #define QON_DrawChar DrawChar
@@ -88,6 +84,7 @@ unsigned char x_font[APPLEIIF_WIDTH * APPLEIIF_HEIGHT / 8] = {
 SDL_Renderer *x_renderer;
 SDL_Window *x_window;
 SDL_Texture *x_fontTex;
+unsigned char x_colorization[4];
 int x_mouseX, x_mouseY;
     
 static SDL_Texture* CreateFontTexture( void ) {
@@ -219,10 +216,10 @@ static inline int Clamp( int a, int min, int max ) {
 
 static void ColorPicker_f( int qonX, int qonY, void *param ) {
     ( void )param;
-    static SDL_Texture *texSat;
+    static SDL_Texture *texSV;
     static SDL_Texture *texHue;
 
-    const unsigned char hue[7 * 4] = {
+    static const unsigned char hue[7 * 4] = {
         0xff,0x00,0x00,0xff, // red
         0xff,0x00,0xff,0xff, // magenta
         0x00,0x00,0xff,0xff, // blue
@@ -232,19 +229,19 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
         0xff,0x00,0x00,0xff, // red
     };
 
-    const unsigned char sat[2 * 2 * 4] = {
+    static unsigned char sv[2 * 2 * 4] = {
         0xff,0xff,0xff,0xff,   0xff,0x00,0x00,0xff,
         0x00,0x00,0x00,0xff,   0x00,0x00,0x00,0xff,
     };
     
     // == init == 
 
-    if ( ! texSat ) {
+    if ( ! texSV ) {
         // lerp quality
         SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" );
-        texSat = SDL_CreateTexture( x_renderer, SDL_PIXELFORMAT_ABGR8888, 
+        texSV = SDL_CreateTexture( x_renderer, SDL_PIXELFORMAT_ABGR8888, 
                                             SDL_TEXTUREACCESS_STREAMING, 2, 2 );
-        SDL_UpdateTexture( texSat, NULL, sat, 2 * 4 );
+        SDL_UpdateTexture( texSV, NULL, sv, 2 * 4 );
 
         texHue = SDL_CreateTexture( x_renderer, SDL_PIXELFORMAT_ABGR8888, 
                                             SDL_TEXTUREACCESS_STATIC, 1, 7 );
@@ -253,54 +250,36 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
 
     // == draw widgets ==
 
-    int satX = CON_X + qonX * ( APPLEIIF_CW + CON_SPACE_X ) * CON_SCALE_X; 
-    int satY = CON_Y + qonY * ( APPLEIIF_CH + CON_SPACE_Y ) * CON_SCALE_Y; 
-    int satW = 200;
-    int satH = 200;
+    int svX = CON_X + qonX * ( APPLEIIF_CW + CON_SPACE_X ) * CON_SCALE_X; 
+    int svY = CON_Y + qonY * ( APPLEIIF_CH + CON_SPACE_Y ) * CON_SCALE_Y; 
+    int svW = 200;
+    int svH = svW;
     uiWidgetResult_t uiSat;
 
-    int hueX = satX + satW + satW / 10;
-    int hueY = satY;
-    int hueW = satW / 8;
-    int hueH = satH;
+    int hueX = svX + svW + svW / 10;
+    int hueY = svY;
+    int hueW = svW / 8;
+    int hueH = svH;
     uiWidgetResult_t uiHue;
 
     {
         // saturation/value
-        SDL_SetTextureBlendMode( texSat, SDL_BLENDMODE_NONE );
-        SDL_SetTextureColorMod( texSat, 0xff, 0xff, 0xff );
-        SDL_Rect clip = { satX, satY, satW, satH };
+        SDL_SetTextureBlendMode( texSV, SDL_BLENDMODE_NONE );
+        SDL_SetTextureColorMod( texSV, 0xff, 0xff, 0xff );
+        SDL_Rect clip = { svX, svY, svW, svH };
         SDL_RenderSetClipRect( x_renderer, &clip );
-        SDL_Rect dst = { satX - satW / 2, satY - satH / 2, 2 * satW, 2 * satH };
-        SDL_RenderCopy( x_renderer, texSat, NULL, &dst );
-        uiSat = ZH_UI_ClickRect( satX, satY, satW, satH );
+        SDL_Rect dst = { svX - svW / 2, svY - svH / 2, 2 * svW, 2 * svH };
+        SDL_RenderCopy( x_renderer, texSV, NULL, &dst );
+        uiSat = ZH_UI_ClickRect( svX, svY, svW, svH );
 
         // hue
         clip = ( SDL_Rect ){ hueX, hueY, hueW, hueH };
         SDL_RenderSetClipRect( x_renderer, &clip );
         dst = ( SDL_Rect ){ hueX, hueY - hueH / 14, hueW, hueH + hueH / 7 };
         SDL_RenderCopy( x_renderer, texHue, NULL, &dst );
-        uiHue = ZH_UI_ClickRect( hueX - 8, satY - 8, hueW + 16, satH + 16 );
+        uiHue = ZH_UI_ClickRect( hueX - 8, svY - 8, hueW + 16, svH + 16 );
 
         SDL_RenderSetClipRect( x_renderer, NULL );
-    }
-
-    // == S/V cursor ==
-
-    {
-        static int x = 99999, y;
-
-        if ( uiSat == UIBR_ACTIVE ) {
-            x = x_mouseX - satX;
-            y = x_mouseY - satY;
-        }
-
-        int drawX = satX + Clamp( x, 0, satW );
-        int drawY = satY + Clamp( y, 0, satH );
-
-        int w = 2 * APPLEIIF_CW;
-        int h = 2 * APPLEIIF_CH;
-        DrawCharXY( 'o', drawX - w / 2 + 1, drawY - h / 2 - 1, w, h );
     }
 
     // == hue cursor ==
@@ -312,22 +291,69 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
             void *pixels;
             int pitch;
             SDL_Rect rect = { 1, 0, 1, 1 };
-            SDL_LockTexture( texSat, &rect, &pixels, &pitch );
+            SDL_LockTexture( texSV, &rect, &pixels, &pitch );
             int seg = hueH / 6;
-            int t = ( y % seg ) * 255 / seg;
+            // FIXME: change with shifts
+            int t = ( y % seg ) * 256 / seg;
             int i = y / seg;
             const unsigned char *c0 = &hue[( ( i + 0 ) % 7 ) * 4];
             const unsigned char *c1 = &hue[( ( i + 1 ) % 7 ) * 4];
             unsigned char *p = pixels;
-            p[0] = ( c1[0] * t + c0[0] * ( 255 - t ) ) / 255;
-            p[1] = ( c1[1] * t + c0[1] * ( 255 - t ) ) / 255;
-            p[2] = ( c1[2] * t + c0[2] * ( 255 - t ) ) / 255;
-            SDL_UnlockTexture( texSat );
+            p[0] = ( c1[0] * t + c0[0] * ( 256 - t ) ) / 256;
+            p[1] = ( c1[1] * t + c0[1] * ( 256 - t ) ) / 256;
+            p[2] = ( c1[2] * t + c0[2] * ( 256 - t ) ) / 256;
+            sv[4 + 0] = p[0];
+            sv[4 + 1] = p[1];
+            sv[4 + 2] = p[2];
+            SDL_UnlockTexture( texSV );
         }
         int drawY = hueY + y;
         int w = 2 * hueW;
         int h = 2 * APPLEIIF_CH;
         DrawCharXY( '=', hueX - hueW / 3, drawY - h / 2 + 1, w, h );
+    }
+
+    // == saturation/value cursor ==
+
+    {
+        static int x = 99999, y;
+        if ( uiSat == UIBR_ACTIVE ) {
+            x = Clamp( x_mouseX - svX, 0, svW );
+            y = Clamp( x_mouseY - svY, 0, svH );
+        }
+        if ( uiHue == UIBR_ACTIVE || uiSat == UIBR_ACTIVE ) {
+            // FIXME: use shifts
+            int s = x * 256 / svW;
+            int v = y * 256 / svH;
+            int is = 256 - s;
+            int iv = 256 - v;
+
+            int c0r = ( is * iv * sv[ 0 + 0] ) / 65536;
+            int c0g = ( is * iv * sv[ 0 + 1] ) / 65536;
+            int c0b = ( is * iv * sv[ 0 + 2] ) / 65536;
+
+            int c1r = (  s * iv * sv[ 4 + 0] ) / 65536;
+            int c1g = (  s * iv * sv[ 4 + 1] ) / 65536;
+            int c1b = (  s * iv * sv[ 4 + 2] ) / 65536;
+
+            int c2r = ( is *  v * sv[ 8 + 0] ) / 65536;
+            int c2g = ( is *  v * sv[ 8 + 1] ) / 65536;
+            int c2b = ( is *  v * sv[ 8 + 2] ) / 65536;
+
+            int c3r = (  s *  v * sv[12 + 0] ) / 65536;
+            int c3g = (  s *  v * sv[12 + 1] ) / 65536;
+            int c3b = (  s *  v * sv[12 + 2] ) / 65536;
+
+            x_colorization[0] = c0r + c1r + c2r + c3r;
+            x_colorization[1] = c0g + c1g + c2g + c3g;
+            x_colorization[2] = c0b + c1b + c2b + c3b;
+            x_colorization[3] = 255;
+        }
+        int drawX = svX + Clamp( x, 0, svW );
+        int drawY = svY + Clamp( y, 0, svH );
+        int w = 2 * APPLEIIF_CW;
+        int h = 2 * APPLEIIF_CH;
+        DrawCharXY( 'o', drawX - w / 2 + 1, drawY - h / 2 - 1, w, h );
     }
 }
 
@@ -335,7 +361,9 @@ static void DrawFontAtlas_f( int x, int y, void *param ) {
     ( void )param;
     SDL_SetTextureAlphaMod( x_fontTex, 0xff );
     SDL_SetTextureBlendMode( x_fontTex, SDL_BLENDMODE_BLEND );
-    SDL_SetTextureColorMod( x_fontTex, 0x00, 0xff, 0xf0 );
+    SDL_SetTextureColorMod( x_fontTex, x_colorization[0], 
+                                        x_colorization[1], 
+                                        x_colorization[2] ); 
     int h = APPLEIIF_HEIGHT * CON_SCALE_Y;
     SDL_Rect dst = { 
         CON_X + x * ( APPLEIIF_CW + CON_SPACE_X ) * CON_SCALE_X, 
