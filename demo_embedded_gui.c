@@ -212,6 +212,11 @@ void MainLoop( void *arg ) {
     SDL_Delay( 10 );
 }
 
+static inline int Clamp( int a, int min, int max ) {
+    int result = a > min ? a : min;
+    return result < max ? result : max;
+}
+
 static void ColorPicker_f( int qonX, int qonY, void *param ) {
     ( void )param;
     static SDL_Texture *texSat;
@@ -250,9 +255,12 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
     int satY = CON_Y + qonY * ( APPLEIIF_CH + CON_SPACE_Y ) * CON_SCALE_Y; 
     int satW = 200;
     int satH = 200;
+    uiWidgetResult_t uiSat;
 
     int hueX = satX + satW + satW / 10;
-    int hueW = satW / 10;
+    int hueY = satY;
+    int hueW = satW / 8;
+    uiWidgetResult_t uiHue;
 
     {
         // saturation/value
@@ -263,26 +271,46 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
         SDL_Rect dst = { satX - satW / 2, satY - satH / 2, 2 * satW, 2 * satH };
         SDL_RenderCopy( x_renderer, texSat, NULL, &dst );
         SDL_RenderSetClipRect( x_renderer, NULL );
+        uiSat = ZH_UI_ClickRect( satX, satY, satW, satH );
 
         // hue
         dst = ( SDL_Rect ){ hueX, satY, hueW, satH };
         SDL_RenderCopy( x_renderer, texHue, NULL, &dst );
+        uiHue = ZH_UI_ClickRect( hueX - 8, satY - 8, hueW + 16, satH + 16 );
     }
 
     // == S/V cursor ==
 
     {
+        static int x = 999999, y = -999999;
+
+        if ( uiSat == UIBR_ACTIVE ) {
+            x = x_mouseX - satX;
+            y = x_mouseY - satY;
+        }
+
+        int drawX = satX + Clamp( x, 0, satW );
+        int drawY = satY + Clamp( y, 0, satH );
+
         int w = 2 * APPLEIIF_CW;
         int h = 2 * APPLEIIF_CH;
-        DrawCharXY( 'o', x_mouseX - w / 2 + 1, x_mouseY - h / 2 - 1, w, h );
+        DrawCharXY( 'o', drawX - w / 2 + 1, drawY - h / 2 - 1, w, h );
     }
 
     // == hue cursor ==
 
     {
+        static int y = -999999;
+
+        if ( uiHue == UIBR_ACTIVE ) {
+            y = x_mouseY - hueY;
+        }
+
+        int drawY = hueY + Clamp( y, 0, satH );
+
         int w = 2 * hueW;
         int h = 2 * APPLEIIF_CH;
-        DrawCharXY( '=', hueX - hueW / 3, x_mouseY - h / 2 + 1, w, h );
+        DrawCharXY( '=', hueX - hueW / 3, drawY - h / 2 + 1, w, h );
     }
 }
 
