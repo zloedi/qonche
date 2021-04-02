@@ -221,6 +221,21 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
     ( void )param;
     static SDL_Texture *texSat;
     static SDL_Texture *texHue;
+
+    const unsigned char hue[7 * 4] = {
+        0xff,0x00,0x00,0xff, // red
+        0xff,0x00,0xff,0xff, // magenta
+        0x00,0x00,0xff,0xff, // blue
+        0x00,0xff,0xff,0xff, // cyan
+        0x00,0xff,0x00,0xff, // green
+        0xff,0xff,0x00,0xff, // yellow
+        0xff,0x00,0x00,0xff, // red
+    };
+
+    const unsigned char sat[2 * 2 * 4] = {
+        0xff,0xff,0xff,0xff,   0xff,0x00,0x00,0xff,
+        0x00,0x00,0x00,0xff,   0x00,0x00,0x00,0xff,
+    };
     
     // == init == 
 
@@ -229,23 +244,10 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
         SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" );
         texSat = SDL_CreateTexture( x_renderer, SDL_PIXELFORMAT_ABGR8888, 
                                             SDL_TEXTUREACCESS_STREAMING, 2, 2 );
-        unsigned char sat[2 * 2 * 4] = {
-            0xff,0xff,0xff,0xff,   0xff,0x00,0x00,0xff,
-            0x00,0x00,0x00,0xff,   0x00,0x00,0x00,0xff,
-        };
         SDL_UpdateTexture( texSat, NULL, sat, 2 * 4 );
 
         texHue = SDL_CreateTexture( x_renderer, SDL_PIXELFORMAT_ABGR8888, 
-                                            SDL_TEXTUREACCESS_STREAMING, 1, 7 );
-        unsigned char hue[7 * 4] = {
-            0xff,0x00,0x00,0xff,
-            0xff,0xff,0x00,0xff,
-            0x00,0xff,0x00,0xff,
-            0x00,0xff,0xff,0xff,
-            0x00,0x00,0xff,0xff,
-            0xff,0x00,0xff,0xff,
-            0xff,0x00,0x00,0xff,
-        };
+                                            SDL_TEXTUREACCESS_STATIC, 1, 7 );
         SDL_UpdateTexture( texHue, NULL, hue, 4 );
     }
 
@@ -260,6 +262,7 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
     int hueX = satX + satW + satW / 10;
     int hueY = satY;
     int hueW = satW / 8;
+    int hueH = satH;
     uiWidgetResult_t uiHue;
 
     {
@@ -270,19 +273,22 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
         SDL_RenderSetClipRect( x_renderer, &clip );
         SDL_Rect dst = { satX - satW / 2, satY - satH / 2, 2 * satW, 2 * satH };
         SDL_RenderCopy( x_renderer, texSat, NULL, &dst );
-        SDL_RenderSetClipRect( x_renderer, NULL );
         uiSat = ZH_UI_ClickRect( satX, satY, satW, satH );
 
         // hue
-        dst = ( SDL_Rect ){ hueX, satY, hueW, satH };
+        clip = ( SDL_Rect ){ hueX, hueY, hueW, hueH };
+        SDL_RenderSetClipRect( x_renderer, &clip );
+        dst = ( SDL_Rect ){ hueX, hueY - hueH / 14, hueW, hueH + hueH / 7 };
         SDL_RenderCopy( x_renderer, texHue, NULL, &dst );
         uiHue = ZH_UI_ClickRect( hueX - 8, satY - 8, hueW + 16, satH + 16 );
+
+        SDL_RenderSetClipRect( x_renderer, NULL );
     }
 
     // == S/V cursor ==
 
     {
-        static int x = 999999, y = -999999;
+        static int x = 99999, y;
 
         if ( uiSat == UIBR_ACTIVE ) {
             x = x_mouseX - satX;
@@ -300,14 +306,25 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
     // == hue cursor ==
 
     {
-        static int y = -999999;
-
+        static int y;
         if ( uiHue == UIBR_ACTIVE ) {
-            y = x_mouseY - hueY;
+            y = Clamp( x_mouseY - hueY, 0, hueH );
+            void *pixels;
+            int pitch;
+            SDL_Rect rect = { 1, 0, 1, 1 };
+            SDL_LockTexture( texSat, &rect, &pixels, &pitch );
+            int seg = hueH / 6;
+            int t = ( y % seg ) * 255 / seg;
+            int i = y / seg;
+            const unsigned char *c0 = &hue[( ( i + 0 ) % 7 ) * 4];
+            const unsigned char *c1 = &hue[( ( i + 1 ) % 7 ) * 4];
+            unsigned char *p = pixels;
+            p[0] = ( c1[0] * t + c0[0] * ( 255 - t ) ) / 255;
+            p[1] = ( c1[1] * t + c0[1] * ( 255 - t ) ) / 255;
+            p[2] = ( c1[2] * t + c0[2] * ( 255 - t ) ) / 255;
+            SDL_UnlockTexture( texSat );
         }
-
-        int drawY = hueY + Clamp( y, 0, satH );
-
+        int drawY = hueY + y;
         int w = 2 * hueW;
         int h = 2 * APPLEIIF_CH;
         DrawCharXY( '=', hueX - hueW / 3, drawY - h / 2 + 1, w, h );
