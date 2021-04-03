@@ -1,3 +1,7 @@
+// Copyright (c) 2021 Stoiko Todorov
+// This work is licensed under the terms of the MIT license.  
+// For a copy, see https://opensource.org/licenses/MIT.
+
 #define QON_CUSTOM_DRAW_CALLBACKS
 #define QON_USE_PAGER_CALLBACKS
 #define QON_DrawChar DrawChar

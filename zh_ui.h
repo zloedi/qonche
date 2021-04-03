@@ -1,3 +1,7 @@
+// Copyright (c) 2021 Stoiko Todorov
+// This work is licensed under the terms of the MIT license.  
+// For a copy, see https://opensource.org/licenses/MIT.
+
 #ifndef ZH_UI_H
 #define ZH_UI_H
 

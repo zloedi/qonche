@@ -1,3 +1,7 @@
+// Copyright (c) 2021 Stoiko Todorov
+// This work is licensed under the terms of the MIT license.  
+// For a copy, see https://opensource.org/licenses/MIT.
+
 #define QONCHE_IMPLEMENTATION
 #define QON_DrawChar DrawChar
 #include "qonche.h"
