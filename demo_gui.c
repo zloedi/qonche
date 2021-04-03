@@ -388,10 +388,11 @@ int main( int argc, char *argv[] ) {
     int flags;
 #ifdef __EMSCRIPTEN__
     flags = 0;
+    SDL_CreateWindowAndRenderer( 640, 768, flags, &x_window, &x_renderer );
 #else
     flags = SDL_WINDOW_RESIZABLE;
+    SDL_CreateWindowAndRenderer( 700, 820, flags, &x_window, &x_renderer );
 #endif
-    SDL_CreateWindowAndRenderer( 1024, 768, flags, &x_window, &x_renderer );
     x_fontTex = CreateFontTexture();
       
     QON_Print( "\n" );
@@ -400,13 +401,13 @@ int main( int argc, char *argv[] ) {
     QON_Print( "                  \\_T_/ onche\n" );
     QON_Print( "                    |        \n" );
     QON_Print( "\n" );
-    QON_Print( "'qonche' is a quake style console in a\nsingle C header.\n" );
-    QON_Print( "\n" );
+    QON_Print( "The 'GUI' demo extends the console a bit...\n\n" );
     QON_Print( "You can draw pictures inside the log:\n" );
-    QON_PrintWithCallback( DrawFontAtlas_f, NULL, "\n\n\n\n\n\nEpilog\n\n" );
-    QON_Print( "Place them horizontally too:\n" );
+    QON_PrintWithCallback( DrawFontAtlas_f, NULL, "\n\n\n\n\n\n" );
+    QON_Print( "Place them next to each other too:\n" );
     QON_PrintWithCallback( DrawFontAtlas_f, NULL, "                       " );
-    QON_PrintWithCallback( DrawFontAtlas_f, NULL, "\n\n\n\n\n\nEpilog\n" );
+    QON_PrintWithCallback( DrawFontAtlas_f, NULL, "\n\n\n\n\n\n" );
+    QON_Print( "You can even embed GUI stuff:\n" );
     QON_PrintWithCallback( ColorPicker_f, NULL, "\n\n\n\n\n\n\n\n\n\n" );
 
     int quit = 0;
