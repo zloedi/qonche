@@ -120,6 +120,8 @@ int QON_PrintWithCallback( void ( *cb )( int x, int y, void *param ),
 #endif
 
 #ifdef QON_CUSTOM_DRAW_CALLBACKS
+// try to look harder for stuff offscreen if we have custom draws enabled
+#define QON_MAX_OFFSCREEN_LOOKUP 256
 static void *qon_drawCallbacksParams[QON_MAX_PAGER];
 static void ( *qon_drawCallbacks[QON_MAX_PAGER] )( int x, int y, void *param );
 #define QON_DrawCallback( i, x, y, param ) \
@@ -128,6 +130,7 @@ static void ( *qon_drawCallbacks[QON_MAX_PAGER] )( int x, int y, void *param );
                 QON_PrintWithCallbackn((str),(n),QON_Dummy_f,0)
 #define QON_PrintWithCallback QON_PrintWithCallback_impl
 #else
+#define QON_MAX_OFFSCREEN_LOOKUP 0
 #define QON_DrawCallback(...)
 #define QON_Printn QON_PrintClamp
 #define QON_PrintWithCallback(...)
@@ -348,10 +351,11 @@ void QON_DrawEx( int conWidth, int conHeight, int skipCommandLine,
         int x = 0;
         int y = maxY;
 
+        // go up the pager to the nearest offscreen new line character
         while ( 1 ) {
             int c = QON_GetPagerChar( start );
 
-            if ( y < 0 && ( ! c || c == '\n' ) ) {
+            if ( y < -QON_MAX_OFFSCREEN_LOOKUP && ( ! c || c == '\n' ) ) {
                 x = 0;
                 break;
             }
@@ -372,6 +376,10 @@ void QON_DrawEx( int conWidth, int conHeight, int skipCommandLine,
         for ( i = start + 1; y < 2 * maxY - 1; i++ ) {
             int c = QON_GetPagerChar( i );
 
+            if ( c ) {
+                QON_DrawCallback( i, x, y, drawCharParam );
+            }
+
             if ( y >= 0 && y < maxY ) {
 
                 // previous page ends with the first line of the current one
@@ -382,16 +390,13 @@ void QON_DrawEx( int conWidth, int conHeight, int skipCommandLine,
 
                 if ( ! c ) {
                     QON_DrawChar( '~', 0, y, 0, drawCharParam );
-                } else {
-                    QON_DrawCallback( i, x, y, drawCharParam );
-                    if ( c == '\n' ) {
+                } else if ( c == '\n' ) {
 #ifdef QON_DEBUG
-                        // debug draw the new lines
-                        QON_DrawChar( '0' + ( i % 10 ), x, y, 0, drawCharParam );
+                    // debug draw the new lines
+                    QON_DrawChar( '0' + ( i % 10 ), x, y, 0, drawCharParam );
 #endif
-                    } else {
-                        QON_DrawChar( c, x, y, 0, drawCharParam );
-                    }
+                } else {
+                    QON_DrawChar( c, x, y, 0, drawCharParam );
                 }
             }
 
