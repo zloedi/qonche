@@ -229,6 +229,7 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
         0xff,0x00,0x00,0xff, // red
     };
 
+    // FIXME: could use just one pixel (directly use the colorization), not a buffer
     static unsigned char sv[2 * 2 * 4] = {
         0xff,0xff,0xff,0xff,   0xff,0x00,0x00,0xff,
         0x00,0x00,0x00,0xff,   0x00,0x00,0x00,0xff,
@@ -242,10 +243,13 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
         texSV = SDL_CreateTexture( x_renderer, SDL_PIXELFORMAT_ABGR8888, 
                                             SDL_TEXTUREACCESS_STREAMING, 2, 2 );
         SDL_UpdateTexture( texSV, NULL, sv, 2 * 4 );
-
         texHue = SDL_CreateTexture( x_renderer, SDL_PIXELFORMAT_ABGR8888, 
                                             SDL_TEXTUREACCESS_STATIC, 1, 7 );
         SDL_UpdateTexture( texHue, NULL, hue, 4 );
+        x_colorization[0] = sv[4 + 0];
+        x_colorization[1] = sv[4 + 1];
+        x_colorization[2] = sv[4 + 2];
+        x_colorization[3] = sv[4 + 3];
     }
 
     // == draw widgets ==
@@ -256,13 +260,17 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
     int svH = svW;
     uiWidgetResult_t uiSat;
 
-    int hueX = svX + svW + svW / 10;
+    int hueX = svX + svW + 20;
     int hueY = svY;
-    int hueW = svW / 8;
+    int hueW = 25;
     int hueH = svH;
     uiWidgetResult_t uiHue;
 
     {
+        // in Opengl you just tweak the UV-s to match the lerped region
+        // however SDL doesn't allow floating point/subpixel source rectangles
+        // so we resolve to clip rect ugliness
+
         // saturation/value
         SDL_SetTextureBlendMode( texSV, SDL_BLENDMODE_NONE );
         SDL_SetTextureColorMod( texSV, 0xff, 0xff, 0xff );
@@ -293,15 +301,14 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
             SDL_Rect rect = { 1, 0, 1, 1 };
             SDL_LockTexture( texSV, &rect, &pixels, &pitch );
             int seg = hueH / 6;
-            // FIXME: change with shifts
-            int t = ( y % seg ) * 256 / seg;
+            int t = ( ( y % seg ) << 8 ) / seg;
             int i = y / seg;
             const unsigned char *c0 = &hue[( ( i + 0 ) % 7 ) * 4];
             const unsigned char *c1 = &hue[( ( i + 1 ) % 7 ) * 4];
             unsigned char *p = pixels;
-            p[0] = ( c1[0] * t + c0[0] * ( 256 - t ) ) / 256;
-            p[1] = ( c1[1] * t + c0[1] * ( 256 - t ) ) / 256;
-            p[2] = ( c1[2] * t + c0[2] * ( 256 - t ) ) / 256;
+            p[0] = ( c1[0] * t + c0[0] * ( 256 - t ) ) >> 8;
+            p[1] = ( c1[1] * t + c0[1] * ( 256 - t ) ) >> 8;
+            p[2] = ( c1[2] * t + c0[2] * ( 256 - t ) ) >> 8;
             sv[4 + 0] = p[0];
             sv[4 + 1] = p[1];
             sv[4 + 2] = p[2];
@@ -322,32 +329,30 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
             y = Clamp( x_mouseY - svY, 0, svH );
         }
         if ( uiHue == UIBR_ACTIVE || uiSat == UIBR_ACTIVE ) {
-            // FIXME: use shifts
-            int s = x * 256 / svW;
-            int v = y * 256 / svH;
+            int s = ( x << 8 ) / svW;
+            int v = ( y << 8 ) / svH;
             int is = 256 - s;
             int iv = 256 - v;
 
-            int c0r = ( is * iv * sv[ 0 + 0] ) / 65536;
-            int c0g = ( is * iv * sv[ 0 + 1] ) / 65536;
-            int c0b = ( is * iv * sv[ 0 + 2] ) / 65536;
+            int c0r = ( is * iv * sv[ 0 + 0] ) >> 16;
+            int c0g = ( is * iv * sv[ 0 + 1] ) >> 16;
+            int c0b = ( is * iv * sv[ 0 + 2] ) >> 16;
 
-            int c1r = (  s * iv * sv[ 4 + 0] ) / 65536;
-            int c1g = (  s * iv * sv[ 4 + 1] ) / 65536;
-            int c1b = (  s * iv * sv[ 4 + 2] ) / 65536;
+            int c1r = (  s * iv * sv[ 4 + 0] ) >> 16;
+            int c1g = (  s * iv * sv[ 4 + 1] ) >> 16;
+            int c1b = (  s * iv * sv[ 4 + 2] ) >> 16;
 
-            int c2r = ( is *  v * sv[ 8 + 0] ) / 65536;
-            int c2g = ( is *  v * sv[ 8 + 1] ) / 65536;
-            int c2b = ( is *  v * sv[ 8 + 2] ) / 65536;
+            int c2r = ( is *  v * sv[ 8 + 0] ) >> 16;
+            int c2g = ( is *  v * sv[ 8 + 1] ) >> 16;
+            int c2b = ( is *  v * sv[ 8 + 2] ) >> 16;
 
-            int c3r = (  s *  v * sv[12 + 0] ) / 65536;
-            int c3g = (  s *  v * sv[12 + 1] ) / 65536;
-            int c3b = (  s *  v * sv[12 + 2] ) / 65536;
+            int c3r = (  s *  v * sv[12 + 0] ) >> 16;
+            int c3g = (  s *  v * sv[12 + 1] ) >> 16;
+            int c3b = (  s *  v * sv[12 + 2] ) >> 16;
 
             x_colorization[0] = c0r + c1r + c2r + c3r;
             x_colorization[1] = c0g + c1g + c2g + c3g;
             x_colorization[2] = c0b + c1b + c2b + c3b;
-            x_colorization[3] = 255;
         }
         int drawX = svX + Clamp( x, 0, svW );
         int drawY = svY + Clamp( y, 0, svH );
