@@ -191,10 +191,8 @@ void MainLoop( void *arg ) {
                 break;
         }
     }
-
     SDL_SetRenderDrawColor( x_renderer, 40, 45, 50, 255 );
     SDL_RenderClear( x_renderer );
-
     int cellW = CON_SCALE_X * ( APPLEIIF_CW + CON_SPACE_X );
     int cellH = CON_SCALE_Y * ( APPLEIIF_CH + CON_SPACE_Y );
     int w, h;
@@ -210,8 +208,8 @@ void MainLoop( void *arg ) {
 }
 
 static inline int Clamp( int a, int min, int max ) {
-    int result = a > min ? a : min;
-    return result < max ? result : max;
+    int t = a < min ? min : a;
+    return t > max ? max : t;
 }
 
 static void ColorPicker_f( int qonX, int qonY, void *param ) {
@@ -229,7 +227,6 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
         0xff,0x00,0x00,0xff, // red
     };
 
-    // FIXME: could use just one pixel (directly use the colorization), not a buffer
     static unsigned char sv[2 * 2 * 4] = {
         0xff,0xff,0xff,0xff,   0xff,0x00,0x00,0xff,
         0x00,0x00,0x00,0xff,   0x00,0x00,0x00,0xff,
@@ -246,10 +243,6 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
         texHue = SDL_CreateTexture( x_renderer, SDL_PIXELFORMAT_ABGR8888, 
                                             SDL_TEXTUREACCESS_STATIC, 1, 7 );
         SDL_UpdateTexture( texHue, NULL, hue, 4 );
-        x_colorization[0] = sv[4 + 0];
-        x_colorization[1] = sv[4 + 1];
-        x_colorization[2] = sv[4 + 2];
-        x_colorization[3] = sv[4 + 3];
     }
 
     // == draw widgets ==
@@ -315,20 +308,24 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
             SDL_UnlockTexture( texSV );
         }
         int drawY = hueY + y;
-        int w = 2 * hueW;
+        int w = hueW + 8;
         int h = 2 * APPLEIIF_CH;
-        DrawCharXY( '=', hueX - hueW / 3, drawY - h / 2 + 1, w, h );
+        DrawCharXY( '=', hueX - 2, drawY - h / 2 + 1, w, h );
     }
 
     // == saturation/value cursor ==
 
     {
         static int x = 99999, y;
-        if ( uiSat == UIBR_ACTIVE ) {
-            x = Clamp( x_mouseX - svX, 0, svW );
-            y = Clamp( x_mouseY - svY, 0, svH );
-        }
-        if ( uiHue == UIBR_ACTIVE || uiSat == UIBR_ACTIVE ) {
+        if ( ! x_colorization[3] || uiHue == UIBR_ACTIVE || uiSat == UIBR_ACTIVE ) {
+            if ( uiSat == UIBR_ACTIVE ) {
+                x = Clamp( x_mouseX - svX, 0, svW );
+                y = Clamp( x_mouseY - svY, 0, svH );
+            } else {
+                x = Clamp( x, 0, svW );
+                y = Clamp( y, 0, svH );
+            }
+
             int s = ( x << 8 ) / svW;
             int v = ( y << 8 ) / svH;
             int is = 256 - s;
@@ -353,9 +350,10 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
             x_colorization[0] = c0r + c1r + c2r + c3r;
             x_colorization[1] = c0g + c1g + c2g + c3g;
             x_colorization[2] = c0b + c1b + c2b + c3b;
+            x_colorization[3] = 0xff;
         }
-        int drawX = svX + Clamp( x, 0, svW );
-        int drawY = svY + Clamp( y, 0, svH );
+        int drawX = svX + x;
+        int drawY = svY + y;
         int w = 2 * APPLEIIF_CW;
         int h = 2 * APPLEIIF_CH;
         DrawCharXY( 'o', drawX - w / 2 + 1, drawY - h / 2 - 1, w, h );
@@ -391,7 +389,7 @@ int main( int argc, char *argv[] ) {
     SDL_CreateWindowAndRenderer( 640, 768, flags, &x_window, &x_renderer );
 #else
     flags = SDL_WINDOW_RESIZABLE;
-    SDL_CreateWindowAndRenderer( 700, 820, flags, &x_window, &x_renderer );
+    SDL_CreateWindowAndRenderer( 1024, 768, flags, &x_window, &x_renderer );
 #endif
     x_fontTex = CreateFontTexture();
       
