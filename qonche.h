@@ -2,7 +2,6 @@
 // This work is licensed under the terms of the MIT license.  
 // For a copy, see https://opensource.org/licenses/MIT.
 
-
 // A tiny quake style debug console in a single C header with no dependencies.
 //
 // This lib PROVIDES: 
@@ -18,11 +17,9 @@
 // This lib DOES NOT PROVIDE:
 // * (font) rendering of any kind
 // * utf-8 / multibyte support
-// * advanced cursor movement i.e. between words
+// * advanced cursor movement
 // * commands parsing, autocompletion, history, etc.
 // * printf-like formatting
-// * multithreading support
-//
 //
 // Usage
 //
@@ -40,23 +37,22 @@
 extern "C" {
 #endif
 
-// == core ==
+// these calls are the public API
 
 // Redefine this macro with your own implementation of DrawChar
 #ifndef QON_DrawChar
 #define QON_DrawChar QON_DrawChar_impl
 #endif
-// Draws character 'c' at (x,y) coordinates, where coordinates are in characters count.
+// Draws character 'c' at (x,y) coordinates, where coordinates are in characters 
+// count.
 // 'isUnderCursor' is set to true when the cursor is on this character.
 // 'drawCharParam' is an optional pointer parameter.
-void QON_DrawChar( int c, int x, int y, int isUnderCursor, void *drawCharParam );
-
+void QON_DrawChar( int c, int x, int y, int isUnderCursor, 
+                                                        void *drawCharParam );
 // Draws the entire console. 'conWidth' and 'conHeight' are in characters count.
 void QON_Draw( int conWidth, int conHeight );
-void QON_DrawEx( int conWidth, int conHeight, int skipCommandLine, void *drawCharParam );
-
-// == input ==
-
+void QON_DrawEx( int conWidth, int conHeight, int skipCommandLine,
+                                                        void *drawCharParam );
 void QON_MoveRight( int numChars );
 void QON_MoveLeft( int numChars );
 // Deletes 'numChars' starting at the cursor
@@ -77,7 +73,6 @@ int QON_PrintWithCallback( void ( *cb )( int x, int y, void *param ),
 
 
 
-
 #ifdef QONCHE_IMPLEMENTATION
 
 
@@ -89,7 +84,8 @@ int QON_PrintWithCallback( void ( *cb )( int x, int y, void *param ),
 // around is done. 
 
 
-// TODO: Clear-pager API
+// TODO: Clear pager
+// TODO: Set command string
 
 
 // Redefine these macros for custom sizes (keep them power of two)
