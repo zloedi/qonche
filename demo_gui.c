@@ -295,20 +295,17 @@ static void ColorPicker_f( int qonX, int qonY, void *param ) {
             y = Clamp( x_mouseY - hueY, 0, hueH );
             void *pixels;
             int pitch;
-            SDL_Rect rect = { 1, 0, 1, 1 };
-            SDL_LockTexture( texSV, &rect, &pixels, &pitch );
+            SDL_LockTexture( texSV, NULL, &pixels, &pitch );
             int seg = hueH / 6;
             int t = ( ( y % seg ) << 8 ) / seg;
             int i = y / seg;
             const unsigned char *c0 = &hue[( ( i + 0 ) % 7 ) * 4];
             const unsigned char *c1 = &hue[( ( i + 1 ) % 7 ) * 4];
             unsigned char *p = pixels;
-            p[0] = ( c1[0] * t + c0[0] * ( 256 - t ) ) >> 8;
-            p[1] = ( c1[1] * t + c0[1] * ( 256 - t ) ) >> 8;
-            p[2] = ( c1[2] * t + c0[2] * ( 256 - t ) ) >> 8;
-            sv[4 + 0] = p[0];
-            sv[4 + 1] = p[1];
-            sv[4 + 2] = p[2];
+            sv[4 + 0] = ( c1[0] * t + c0[0] * ( 256 - t ) ) >> 8;
+            sv[4 + 1] = ( c1[1] * t + c0[1] * ( 256 - t ) ) >> 8;
+            sv[4 + 2] = ( c1[2] * t + c0[2] * ( 256 - t ) ) >> 8;
+            memcpy( p, sv, sizeof( sv ) );
             SDL_UnlockTexture( texSV );
         }
         int drawY = hueY + y;
