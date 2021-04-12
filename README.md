@@ -25,5 +25,5 @@ This lib DOES NOT PROVIDE:
 * Wire up the input routines i.e. to the matching key events in your code.
 * See [qonche.h](https://github.com/zloedi/qonche/blob/main/qonche.h) for details.
 
-### Example usage with embedded GUI
+Example usage with embedded GUI: https://zloedi.github.io/qonche_gui/
 ![Sample image](https://github.com/zloedi/qonche/blob/main/qonche.gif)
