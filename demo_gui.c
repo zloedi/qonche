@@ -26,11 +26,11 @@
 #define CON_SPACE_X 1 
 #define CON_SPACE_Y 3
 
-SDL_Renderer *x_renderer;
-SDL_Window *x_window;
-SDL_Texture *x_fontTex;
-unsigned char x_colorization[4];
-int x_mouseX, x_mouseY;
+static SDL_Renderer *x_renderer;
+static SDL_Window *x_window;
+static SDL_Texture *x_fontTex;
+static unsigned char x_colorization[4];
+static int x_mouseX, x_mouseY;
     
 void DrawCharXY( int c, int x, int y, int w, int h ) {
     int idx = c & ( APPLEIIF_ROWS * APPLEIIF_CLMS - 1 );
@@ -121,9 +121,6 @@ void MainLoop( void *arg ) {
     SDL_GetWindowSize( x_window, &w, &h );
     QON_Draw( ( w - CON_X * 2 ) / cellW, ( h - CON_Y * 2 ) / cellH );
     ZH_UI_Begin( x_mouseX, x_mouseY );
-    if ( ZH_UI_ClickRect( 10, 10, 50, 20 ) == UIBR_RELEASED ) {
-        QON_Print( "Clicked\n" );
-    }
     ZH_UI_End();
     SDL_RenderPresent( x_renderer );
     SDL_Delay( 10 );
