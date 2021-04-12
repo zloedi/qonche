@@ -24,3 +24,6 @@ This lib DOES NOT PROVIDE:
 * Invoke `QON_Draw()` somewhere in your game/render loop, which will eventually call back your version of `QON_DrawChar()`.
 * Wire up the input routines i.e. to the matching key events in your code.
 * See [qonche.h](https://github.com/zloedi/qonche/blob/main/qonche.h) for details.
+
+### Example usage with embedded GUI
+![Sample image](https://github.com/zloedi/qonche/blob/main/qonche.gif)
