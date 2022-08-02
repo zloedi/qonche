@@ -59,6 +59,7 @@ void QON_MoveLeft( int numChars );
 void QON_Delete( int numChars );
 // Deletes 'numChars' to the left of the cursor, excluding the cursor
 void QON_Backspace( int numChars );
+// FIXME: name should be 'insert on prompt', not just 'insert'?
 void QON_Insert( const char *str );
 int QON_Print( const char *str );
 void QON_PageUp( void );
@@ -240,6 +241,7 @@ static int QON_PrintWithCallbackn( const char *str, int n,
     // replace callbacks in the pager string
     qon_drawCallbacksParams[qon_pagerHead & QON_MAX_PAGER_MASK] = param;
     qon_drawCallbacks[qon_pagerHead & QON_MAX_PAGER_MASK] = cb;
+	// FIXME: empty strings kill it?
     for ( int i = 1; i < n && str[i]; i++ ) {
         int idx = qon_pagerHead + i;
         qon_drawCallbacks[idx & QON_MAX_PAGER_MASK] = QON_Dummy_f;
